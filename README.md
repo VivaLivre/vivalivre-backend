@@ -1,6 +1,8 @@
 # VivaLivre Backend
 
-O backend oficial do projeto **VivaLivre**, desenvolvido em Go para fornecer uma infraestrutura robusta, performática e escalável para suporte a pacientes com DII (Doenças Inflamatórias Intestinais).
+O backend oficial do projeto **VivaLivre**, desenvolvido em Go para fornecer uma infraestrutura robusta, performática e escalável para suporte a pacientes com DII (Doenças Inflamatórias Intestinais). 🚀
+
+Inclui geolocalização avançada com PostGIS, autenticação proprietária com JWT e arquitetura escalável desacoplada do Firebase.
 
 ## 🚀 Tecnologias
 - **Linguagem:** Go (Golang) 1.21+
