@@ -57,6 +57,8 @@ func main() {
 		api.GET("/users/me", handlers.GetMe)
 		api.GET("/bathrooms/nearby", handlers.GetNearbyBathrooms)
 		api.GET("/health/entries", handlers.GetHealthEntries)
+		api.POST("/health/entries", handlers.CreateHealthEntry)
+		api.DELETE("/health/entries/:id", handlers.DeleteHealthEntry)
 	}
 
 	// Start Server
