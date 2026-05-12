@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gabrieljose2004/vivalivre-backend/internal/auth"
@@ -182,7 +183,7 @@ func GetHealthEntries(c *gin.Context) {
 	userID := c.MustGet("userID").(int)
 	
 	db := database.GetDB()
-	rows, err := db.Query(context.Background(), `SELECT id, user_id, type, severity, description, symptoms, entry_date FROM health_entries WHERE user_id = $1 ORDER BY entry_date DESC`, userID)
+	rows, err := db.Query(context.Background(), `SELECT id, user_id, type, severity, description, COALESCE(symptoms, '{}'), entry_date FROM health_entries WHERE user_id = $1 ORDER BY entry_date DESC`, userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch health entries"})
 		return
@@ -211,17 +212,22 @@ func CreateHealthEntry(c *gin.Context) {
 		return
 	}
 
+	if req.Symptoms == nil {
+		req.Symptoms = []string{}
+	}
+
 	db := database.GetDB()
 	query := `
 		INSERT INTO health_entries (user_id, type, severity, description, symptoms) 
 		VALUES ($1, $2, $3, $4, $5) 
-		RETURNING id, user_id, type, severity, description, symptoms, entry_date
+		RETURNING id, user_id, type, severity, description, COALESCE(symptoms, '{}'), entry_date
 	`
 	var entry models.HealthEntry
 	err := db.QueryRow(context.Background(), query, userID, req.Type, req.Severity, req.Description, req.Symptoms).
 		Scan(&entry.ID, &entry.UserID, &entry.Type, &entry.Severity, &entry.Description, &entry.Symptoms, &entry.EntryDate)
 	
 	if err != nil {
+		log.Printf("CreateHealthEntry ERROR: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create health entry"})
 		return
 	}
