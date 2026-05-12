@@ -120,9 +120,61 @@ func GetMe(c *gin.Context) {
 
 // GetNearbyBathrooms handles searching for bathrooms using PostGIS
 func GetNearbyBathrooms(c *gin.Context) {
-	// Example implementation - logic would call get_nearby_bathrooms function
-	// Placeholder for now
-	c.JSON(http.StatusOK, gin.H{"message": "PostGIS proximity search logic integrated"})
+	latStr := c.Query("lat")
+	lngStr := c.Query("lng")
+	radiusStr := c.DefaultQuery("radius", "5000") // Default 5km
+
+	if latStr == "" || lngStr == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Missing lat or lng parameters"})
+		return
+	}
+
+	lat, err := strconv.ParseFloat(latStr, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid lat parameter"})
+		return
+	}
+
+	lng, err := strconv.ParseFloat(lngStr, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid lng parameter"})
+		return
+	}
+
+	radius, err := strconv.ParseFloat(radiusStr, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid radius parameter"})
+		return
+	}
+
+	db := database.GetDB()
+	query := `
+		SELECT id, name, address, ST_Y(location::geometry) as latitude, ST_X(location::geometry) as longitude, is_accessible, created_at,
+		ST_Distance(location, ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography) as distance
+		FROM bathrooms
+		WHERE ST_DWithin(location, ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography, $3)
+		ORDER BY distance
+		LIMIT 50;
+	`
+	
+	// Note: ST_MakePoint takes (longitude, latitude) -> ($1, $2) must be (lng, lat)
+	rows, err := db.Query(context.Background(), query, lng, lat, radius)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch nearby bathrooms"})
+		return
+	}
+	defer rows.Close()
+
+	bathrooms := []models.Bathroom{}
+	for rows.Next() {
+		var b models.Bathroom
+		if err := rows.Scan(&b.ID, &b.Name, &b.Address, &b.Latitude, &b.Longitude, &b.IsAccessible, &b.CreatedAt, &b.Distance); err != nil {
+			continue
+		}
+		bathrooms = append(bathrooms, b)
+	}
+
+	c.JSON(http.StatusOK, bathrooms)
 }
 
 // GetHealthEntries returns health data for the logged in user
