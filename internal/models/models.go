@@ -25,8 +25,17 @@ type HealthEntry struct {
 	ID          int       `json:"id"`
 	UserID      int       `json:"user_id"`
 	Type        string    `json:"type"`
+	Severity    string    `json:"severity"`
 	Description string    `json:"description"`
+	Symptoms    []string  `json:"symptoms"`
 	EntryDate   time.Time `json:"entry_date"`
+}
+
+type CreateHealthEntryRequest struct {
+	Type        string   `json:"type" binding:"required"`
+	Severity    string   `json:"severity"`
+	Description string   `json:"description"`
+	Symptoms    []string `json:"symptoms"`
 }
 
 type AuthRequest struct {
