@@ -2,12 +2,16 @@ package handlers
 
 import (
 	"context"
+	"errors"
+	"log"
 	"net/http"
+	"time"
 
 	"github.com/gabrieljose2004/vivalivre-backend/internal/auth"
 	"github.com/gabrieljose2004/vivalivre-backend/internal/database"
 	"github.com/gabrieljose2004/vivalivre-backend/internal/models"
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 // Register handles user registration
@@ -27,9 +31,24 @@ func Register(c *gin.Context) {
 	db := database.GetDB()
 	var user models.User
 	query := `INSERT INTO users (name, email, password_hash) VALUES ($1, $2, $3) RETURNING id, name, email, created_at`
-	err = db.QueryRow(context.Background(), query, req.Name, req.Email, hash).Scan(&user.ID, &user.Name, &user.Email, &user.CreatedAt)
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+	defer cancel()
+
+	err = db.QueryRow(ctx, query, req.Name, req.Email, hash).Scan(&user.ID, &user.Name, &user.Email, &user.CreatedAt)
 	if err != nil {
-		c.JSON(http.StatusConflict, gin.H{"error": "User with this email already exists or registration failed"})
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			c.JSON(http.StatusConflict, gin.H{"error": "Este email já foi utilizado."})
+			return
+		}
+
+		if errors.Is(err, context.DeadlineExceeded) {
+			c.JSON(http.StatusGatewayTimeout, gin.H{"error": "Tempo esgotado ao criar a conta."})
+			return
+		}
+
+		log.Printf("failed to register user: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Não foi possível criar a conta."})
 		return
 	}
 
@@ -57,7 +76,10 @@ func Login(c *gin.Context) {
 	var user models.User
 	var hash string
 	query := `SELECT id, name, email, password_hash, created_at FROM users WHERE email = $1`
-	err := db.QueryRow(context.Background(), query, req.Email).Scan(&user.ID, &user.Name, &user.Email, &hash, &user.CreatedAt)
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+	defer cancel()
+
+	err := db.QueryRow(ctx, query, req.Email).Scan(&user.ID, &user.Name, &user.Email, &hash, &user.CreatedAt)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 		return
@@ -83,7 +105,7 @@ func Login(c *gin.Context) {
 // GetMe returns the current logged in user
 func GetMe(c *gin.Context) {
 	userID := c.MustGet("userID").(int)
-	
+
 	db := database.GetDB()
 	var user models.User
 	query := `SELECT id, name, email, created_at FROM users WHERE id = $1`
@@ -106,7 +128,7 @@ func GetNearbyBathrooms(c *gin.Context) {
 // GetHealthEntries returns health data for the logged in user
 func GetHealthEntries(c *gin.Context) {
 	userID := c.MustGet("userID").(int)
-	
+
 	db := database.GetDB()
 	rows, err := db.Query(context.Background(), `SELECT id, user_id, type, description, entry_date FROM health_entries WHERE user_id = $1`, userID)
 	if err != nil {
