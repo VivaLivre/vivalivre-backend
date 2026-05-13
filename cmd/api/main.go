@@ -59,6 +59,15 @@ func main() {
 		api.GET("/health/entries", handlers.GetHealthEntries)
 		api.POST("/health/entries", handlers.CreateHealthEntry)
 		api.DELETE("/health/entries/:id", handlers.DeleteHealthEntry)
+
+		// Ratings routes
+		api.POST("/bathrooms/:bathroom_id/reviews", handlers.CreateReview)
+		api.GET("/bathrooms/:bathroom_id/reviews", handlers.ListReviews)
+		api.GET("/bathrooms/:bathroom_id/rating-stats", handlers.GetRatingStats)
+		api.GET("/reviews/:review_id", handlers.GetReview)
+		api.PUT("/reviews/:review_id", handlers.UpdateReview)
+		api.DELETE("/reviews/:review_id", handlers.DeleteReview)
+		api.POST("/reviews/:review_id/helpful", handlers.VoteHelpful)
 	}
 
 	// Start Server
