@@ -8,8 +8,6 @@ import (
 	"github.com/gabrieljose2004/vivalivre-backend/internal/auth"
 	"github.com/gabrieljose2004/vivalivre-backend/internal/database"
 	"github.com/gabrieljose2004/vivalivre-backend/internal/handlers"
-	"github.com/gabrieljose2004/vivalivre-backend/internal/ratings/handlers/review_handler"
-	"github.com/gabrieljose2004/vivalivre-backend/internal/ratings/repositories"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 )
@@ -61,18 +59,6 @@ func main() {
 		api.GET("/health/entries", handlers.GetHealthEntries)
 		api.POST("/health/entries", handlers.CreateHealthEntry)
 		api.DELETE("/health/entries/:id", handlers.DeleteHealthEntry)
-
-		// Ratings routes
-		reviewRepo := repositories.NewReviewRepository(database.GetDB())
-		reviewHandler := review_handler.NewReviewHandler(reviewRepo)
-
-		api.POST("/bathrooms/:bathroom_id/reviews", reviewHandler.CreateReview)
-		api.GET("/bathrooms/:bathroom_id/reviews", reviewHandler.ListReviews)
-		api.GET("/bathrooms/:bathroom_id/rating-stats", reviewHandler.GetRatingStats)
-		api.GET("/reviews/:review_id", reviewHandler.GetReview)
-		api.PUT("/reviews/:review_id", reviewHandler.UpdateReview)
-		api.DELETE("/reviews/:review_id", reviewHandler.DeleteReview)
-		api.POST("/reviews/:review_id/helpful", reviewHandler.VoteHelpful)
 	}
 
 	// Start Server
