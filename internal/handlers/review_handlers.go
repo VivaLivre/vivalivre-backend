@@ -59,8 +59,7 @@ func CreateReview(c *gin.Context) {
 	).Scan(&review.ID, &review.HelpfulCount, &review.UnhelpfulCount, &review.Status, &review.CreatedAt, &review.UpdatedAt)
 
 	if err != nil {
-		var pgErr *pgconn.PgError
-		if err, ok := err.(*pgconn.PgError); ok && err.Code == "23505" {
+		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == "23505" {
 			c.JSON(http.StatusConflict, gin.H{"error": "You have already reviewed this bathroom"})
 			return
 		}

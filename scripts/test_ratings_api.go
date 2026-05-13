@@ -12,13 +12,15 @@ import (
 )
 
 type CreateReviewRequest struct {
-	Rating   int    `json:"rating"`
-	Title    string `json:"title"`
-	Comment  string `json:"comment"`
+	Rating              int    `json:"rating"`
+	Title               string `json:"title"`
+	Comment             string `json:"comment"`
+	CleanlinessRating   int    `json:"cleanliness_rating"`
+	AccessibilityRating int    `json:"accessibility_rating"`
 }
 
 type ReviewResponse struct {
-	ID        string `json:"id"`
+	ID        int    `json:"id"`
 	Rating    int    `json:"rating"`
 	Comment   string `json:"comment"`
 	CreatedAt string `json:"created_at"`
@@ -76,15 +78,17 @@ func main() {
 	// Step 2: Create a review
 	fmt.Println("\n2️⃣  Creating a review...")
 	createReviewReq := CreateReviewRequest{
-		Rating:  5,
-		Title:   "Excellent bathroom!",
-		Comment: "Very clean and well-maintained. Highly recommended!",
+		Rating:              5,
+		Title:               "Excellent bathroom!",
+		Comment:             "Very clean and well-maintained. Highly recommended!",
+		CleanlinessRating:   5,
+		AccessibilityRating: 4,
 	}
 	reviewBody, _ := json.Marshal(createReviewReq)
 
 	req, _ := http.NewRequest(
 		"POST",
-		fmt.Sprintf("%s/bathrooms/%s/reviews", baseURL, bathroomID),
+		fmt.Sprintf("%s/api/bathrooms/%s/reviews", baseURL, bathroomID),
 		bytes.NewBuffer(reviewBody),
 	)
 	req.Header.Set("Content-Type", "application/json")
@@ -110,7 +114,7 @@ func main() {
 	fmt.Println("\n3️⃣  Fetching reviews for bathroom...")
 	req, _ = http.NewRequest(
 		"GET",
-		fmt.Sprintf("%s/bathrooms/%s/reviews", baseURL, bathroomID),
+		fmt.Sprintf("%s/api/bathrooms/%s/reviews", baseURL, bathroomID),
 		nil,
 	)
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
@@ -140,7 +144,7 @@ func main() {
 	fmt.Println("\n4️⃣  Fetching rating statistics...")
 	req, _ = http.NewRequest(
 		"GET",
-		fmt.Sprintf("%s/bathrooms/%s/rating-stats", baseURL, bathroomID),
+		fmt.Sprintf("%s/api/bathrooms/%s/rating-stats", baseURL, bathroomID),
 		nil,
 	)
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
