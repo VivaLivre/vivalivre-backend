@@ -4,13 +4,24 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/joho/godotenv"
 )
 
 func main() {
-	// Connection string
-	connStr := "postgres://vivalivre:vivalivre@localhost:5432/vivalivre_db"
+	// Carrega as variáveis do arquivo .env
+	err := godotenv.Load()
+	if err != nil {
+		log.Println("Aviso: Arquivo .env não encontrado")
+	}
+
+	// Pega a URL do banco direto do .env
+	connStr := os.Getenv("DB_URL")
+	if connStr == "" {
+		log.Fatal("DB_URL não encontrada! Verifique seu arquivo .env")
+	}
 
 	// Connect to database
 	conn, err := pgx.Connect(context.Background(), connStr)
