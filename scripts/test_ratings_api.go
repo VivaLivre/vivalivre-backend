@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/joho/godotenv"
 )
@@ -42,13 +43,17 @@ type RatingStatsResponse struct {
 	RatingDistribution   map[string]int     `json:"rating_distribution"`
 }
 
+type NearbyBathroom struct {
+	ID int `json:"id"`
+}
+
 func main() {
 	godotenv.Load()
 
 	baseURL := "http://localhost:8080"
 	testEmail := "test@vivalivre.com"
 	testPassword := "TestPassword123!"
-	bathroomID := "1"
+	bathroomID := ""
 
 	fmt.Println("🧪 VivaLivre Ratings API Test")
 	fmt.Println("═══════════════════════════════════════════════════════════")
@@ -75,6 +80,31 @@ func main() {
 	token := authResp["token"].(string)
 	fmt.Printf("✅ Logged in successfully\n")
 
+	// Step 1.5: Resolve valid bathroom from nearby endpoint
+	fmt.Println("\n1️⃣.5️⃣  Resolving bathroom ID from nearby...")
+	client := &http.Client{}
+	nearbyReq, _ := http.NewRequest(
+		"GET",
+		fmt.Sprintf("%s/api/bathrooms/nearby?lat=-23.6607&lng=-46.4309&radius=10000", baseURL),
+		nil,
+	)
+	nearbyReq.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+	nearbyResp, err := client.Do(nearbyReq)
+	if err != nil {
+		log.Fatalf("❌ Nearby request failed: %v\n", err)
+	}
+	defer nearbyResp.Body.Close()
+
+	var bathrooms []NearbyBathroom
+	if err := json.NewDecoder(nearbyResp.Body).Decode(&bathrooms); err != nil {
+		log.Fatalf("❌ Failed to parse nearby response: %v\n", err)
+	}
+	if len(bathrooms) == 0 {
+		log.Fatalf("❌ No bathrooms found for ratings test\n")
+	}
+	bathroomID = strconv.Itoa(bathrooms[0].ID)
+	fmt.Printf("✅ Using bathroom_id=%s\n", bathroomID)
+
 	// Step 2: Create a review
 	fmt.Println("\n2️⃣  Creating a review...")
 	createReviewReq := CreateReviewRequest{
@@ -94,21 +124,24 @@ func main() {
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 
-	client := &http.Client{}
 	resp, err = client.Do(req)
 	if err != nil {
 		log.Fatalf("❌ Create review failed: %v\n", err)
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != 201 {
+	if resp.StatusCode == 409 {
+		fmt.Println("ℹ️  Review already exists for this user+bathroom, continuing...")
+	} else if resp.StatusCode != 201 {
 		body, _ := io.ReadAll(resp.Body)
 		log.Fatalf("❌ Create review error: %d - %s\n", resp.StatusCode, string(body))
 	}
 
-	var createdReview ReviewResponse
-	json.NewDecoder(resp.Body).Decode(&createdReview)
-	fmt.Printf("✅ Review created: ID=%s, Rating=%d\n", createdReview.ID, createdReview.Rating)
+	if resp.StatusCode == 201 {
+		var createdReview ReviewResponse
+		json.NewDecoder(resp.Body).Decode(&createdReview)
+		fmt.Printf("✅ Review created: ID=%d, Rating=%d\n", createdReview.ID, createdReview.Rating)
+	}
 
 	// Step 3: Get reviews for bathroom
 	fmt.Println("\n3️⃣  Fetching reviews for bathroom...")

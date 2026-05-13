@@ -38,6 +38,17 @@ Este é o backend do VivaLivre, desenvolvido em Go para alta performance e auton
 ### Protegidos (Requer header `Authorization: Bearer <TOKEN>`)
 - `GET /api/bathrooms/nearby`: Busca banheiros próximos via PostGIS.
 - `GET /api/health/entries`: Recupera entradas de saúde do usuário logado.
+- `POST /api/bathrooms/:bathroom_id/reviews`: Cria avaliação (nota geral, limpeza, acessibilidade, comentário).
+- `GET /api/bathrooms/:bathroom_id/reviews`: Lista avaliações com paginação/sort.
+- `GET /api/bathrooms/:bathroom_id/rating-stats`: Estatísticas agregadas de avaliações.
+- `GET /api/reviews/:review_id`: Busca avaliação por ID.
+- `PUT /api/reviews/:review_id`: Atualiza avaliação (somente dono).
+- `DELETE /api/reviews/:review_id`: Remove avaliação (somente dono).
+- `POST /api/reviews/:review_id/helpful`: Vota útil/inútil em avaliação.
+
+### Regra de Produto (Ratings)
+- Foto pertence ao **banheiro** (cadastro inicial), não à avaliação.
+- Não existe upload de foto em review.
 
 ## Estrutura do Projeto
 - `cmd/api/`: Ponto de entrada do servidor.
