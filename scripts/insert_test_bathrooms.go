@@ -95,6 +95,13 @@ func main() {
 			"longitude":     -46.4628,
 			"is_accessible": true,
 		},
+		{
+			"name":          "Banheiro Teste Mauá",
+			"address":       "Centro, Mauá - SP",
+			"latitude":      -23.6607,
+			"longitude":     -46.4309,
+			"is_accessible": true,
+		},
 	}
 
 	// Insert bathrooms
