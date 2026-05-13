@@ -29,9 +29,21 @@ O backend implementa:
 - Autenticação e autorização de utilizadores
 - Gestão de registos de saúde (CRUD)
 - Localização de banheiros adaptados via PostGIS
+- Sistema de avaliações de banheiros (reviews + estatísticas + votos úteis)
 - Validação e persistência de dados
 - Segurança e proteção de dados sensíveis
 - Performance e escalabilidade
+
+### Endpoints de Ratings (protegidos)
+- `POST /api/bathrooms/:bathroom_id/reviews`
+- `GET /api/bathrooms/:bathroom_id/reviews`
+- `GET /api/bathrooms/:bathroom_id/rating-stats`
+- `GET /api/reviews/:review_id`
+- `PUT /api/reviews/:review_id`
+- `DELETE /api/reviews/:review_id`
+- `POST /api/reviews/:review_id/helpful`
+
+Regra de produto: foto pertence ao banheiro, não à avaliação.
 
 ---
 
