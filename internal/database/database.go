@@ -79,12 +79,6 @@ func EnsureRatingsSchema() error {
 			created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
 			UNIQUE(review_id, user_id)
 		)`,
-		`CREATE TABLE IF NOT EXISTS review_photos (
-			id SERIAL PRIMARY KEY,
-			review_id INTEGER NOT NULL REFERENCES bathroom_reviews(id) ON DELETE CASCADE,
-			photo_url TEXT NOT NULL,
-			uploaded_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-		)`,
 		`CREATE INDEX IF NOT EXISTS idx_reviews_bathroom ON bathroom_reviews(bathroom_id)`,
 		`CREATE INDEX IF NOT EXISTS idx_reviews_user ON bathroom_reviews(user_id)`,
 		`CREATE INDEX IF NOT EXISTS idx_reviews_created ON bathroom_reviews(created_at DESC)`,
