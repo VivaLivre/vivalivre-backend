@@ -20,6 +20,9 @@ func main() {
 
 	// Initialize Database
 	database.GetDB()
+	if err := database.EnsureRatingsSchema(); err != nil {
+		log.Fatalf("Failed to ensure ratings schema: %v", err)
+	}
 	defer database.CloseDB()
 
 	// Setup Router
