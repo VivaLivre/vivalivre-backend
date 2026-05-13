@@ -88,6 +88,13 @@ func main() {
 			"longitude":     -46.6700,
 			"is_accessible": true,
 		},
+		{
+			"name":          "Banheiro Adaptado Mauá",
+			"address":       "Rua Dorival Cagnotto, 39 - Mauá, SP",
+			"latitude":      -23.6628,
+			"longitude":     -46.4628,
+			"is_accessible": true,
+		},
 	}
 
 	// Insert bathrooms
