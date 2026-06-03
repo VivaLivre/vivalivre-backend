@@ -71,6 +71,8 @@ func EnsureRatingsSchema() error {
 			updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
 			UNIQUE(bathroom_id, user_id)
 		)`,
+		`ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(50) DEFAULT 'user'`,
+
 		`CREATE TABLE IF NOT EXISTS review_helpful_votes (
 			id SERIAL PRIMARY KEY,
 			review_id INTEGER NOT NULL REFERENCES bathroom_reviews(id) ON DELETE CASCADE,
