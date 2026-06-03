@@ -26,6 +26,7 @@ func RequestBathroom(c *gin.Context) {
 	hasChangingTableStr := c.PostForm("has_changing_table")
 	isFreeStr := c.PostForm("is_free")
 	comment := c.PostForm("comment") // optional
+	operatingHoursStr := c.PostForm("operating_hours") // optional
 
 	// Required text fields
 	if name == "" || address == "" || latStr == "" || lngStr == "" {
@@ -81,12 +82,16 @@ func RequestBathroom(c *gin.Context) {
 		return
 	}
 
+	if operatingHoursStr == "" {
+		operatingHoursStr = `{"type": "unknown"}`
+	}
+
 	// --- 4. Insert into PostgreSQL ---
 
 	db := database.GetDB()
 	query := `
-		INSERT INTO bathrooms (name, address, location, is_accessible, has_changing_table, is_free, comment, photo_url)
-		VALUES ($1, $2, ST_SetSRID(ST_MakePoint($3, $4), 4326), $5, $6, $7, $8, $9)
+		INSERT INTO bathrooms (name, address, location, is_accessible, has_changing_table, is_free, comment, photo_url, operating_hours)
+		VALUES ($1, $2, ST_SetSRID(ST_MakePoint($3, $4), 4326), $5, $6, $7, $8, $9, $10)
 		RETURNING id, created_at
 	`
 
@@ -105,6 +110,7 @@ func RequestBathroom(c *gin.Context) {
 		isFree,           // $7
 		nilIfEmpty(comment), // $8
 		photoURL,         // $9
+		operatingHoursStr, // $10
 	).Scan(&bathroomID, &createdAt)
 
 	if err != nil {
