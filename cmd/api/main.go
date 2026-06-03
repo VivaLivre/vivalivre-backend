@@ -33,7 +33,7 @@ func main() {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
-		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE, PATCH")
 
 		if c.Request.Method == "OPTIONS" {
 			c.AbortWithStatus(204)
@@ -53,12 +53,21 @@ func main() {
 		authGroup.POST("/login", handlers.Login)
 	}
 
+	// Admin Routes (Protegido por JWT + Validação de Role 'admin')
+	admin := r.Group("/api/admin")
+	admin.Use(auth.AuthMiddleware(), auth.RequireAdmin())
+	{
+		admin.GET("/bathrooms/pending", handlers.GetPendingBathrooms)
+		admin.PATCH("/bathrooms/:id/status", handlers.UpdateBathroomStatus)
+	}
+
 	// Protected Routes
 	api := r.Group("/api")
 	api.Use(auth.AuthMiddleware())
 	{
 		api.GET("/users/me", handlers.GetMe)
 		api.GET("/bathrooms/nearby", handlers.GetNearbyBathrooms)
+		api.POST("/bathrooms/request", handlers.RequestBathroom)
 		api.GET("/health/entries", handlers.GetHealthEntries)
 		api.POST("/health/entries", handlers.CreateHealthEntry)
 		api.DELETE("/health/entries/:id", handlers.DeleteHealthEntry)

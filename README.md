@@ -572,7 +572,8 @@ func (r *HealthRepository) GetEntries(userID string) []HealthEntry {
 
 - **[AGENTS.md](../AGENTS.md)** — Definição de papéis e responsabilidades
 - **[docs/](./docs/)** — Documentação técnica e ADRs
-- **[Frontend VivaLivre](https://github.com/VivaLivre/vivalivre-app)** — Aplicativo Flutter
+- **[Frontend VivaLivre](https://github.com/VivaLivre/vivalivre-app)** — Aplicativo Mobile Flutter
+- **[Admin Portal VivaLivre](https://github.com/VivaLivre/vivalivre-admin)** — Painel Administrativo Web em Flutter
 
 ---
 
