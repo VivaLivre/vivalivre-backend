@@ -11,19 +11,21 @@ type User struct {
 }
 
 type Bathroom struct {
-	ID                int       `json:"id"`
-	Name              string    `json:"name"`
-	Address           string    `json:"address"`
-	Latitude          float64   `json:"latitude"`
-	Longitude         float64   `json:"longitude"`
-	IsAccessible      bool      `json:"is_accessible"`
-	HasChangingTable  bool      `json:"has_changing_table"`
-	IsFree            bool      `json:"is_free"`
-	CleanlinessRating float64   `json:"cleanliness_rating"`
-	AccessibilityRating float64 `json:"accessibility_rating"`
-	PhotoURL          string    `json:"photo_url,omitempty"`
-	Distance          float64   `json:"distance,omitempty"`
-	CreatedAt         time.Time `json:"created_at"`
+	ID                  int       `json:"id"`
+	Name                string    `json:"name"`
+	Address             string    `json:"address"`
+	Latitude            float64   `json:"latitude"`
+	Longitude           float64   `json:"longitude"`
+	IsAccessible        bool      `json:"is_accessible"`
+	HasChangingTable    bool      `json:"has_changing_table"`
+	IsFree              bool      `json:"is_free"`
+	Comment             *string   `json:"comment,omitempty"`
+	Status              string    `json:"status"`
+	CleanlinessRating   float64   `json:"cleanliness_rating"`
+	AccessibilityRating float64   `json:"accessibility_rating"`
+	PhotoURL            string    `json:"photo_url,omitempty"`
+	Distance            float64   `json:"distance,omitempty"`
+	CreatedAt           time.Time `json:"created_at"`
 }
 
 type HealthEntry struct {
