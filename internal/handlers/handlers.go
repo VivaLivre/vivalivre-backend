@@ -150,10 +150,11 @@ func GetNearbyBathrooms(c *gin.Context) {
 
 	db := database.GetDB()
 	query := `
-		SELECT id, name, address, ST_Y(location::geometry) as latitude, ST_X(location::geometry) as longitude, is_accessible, created_at,
+		SELECT id, name, address, ST_Y(location::geometry) as latitude, ST_X(location::geometry) as longitude, is_accessible, has_changing_table, is_free, photo_url, status, created_at,
 		ST_Distance(location, ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography) as distance
 		FROM bathrooms
 		WHERE ST_DWithin(location, ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography, $3)
+		AND status = 'approved'
 		ORDER BY distance
 		LIMIT 50;
 	`
@@ -169,8 +170,17 @@ func GetNearbyBathrooms(c *gin.Context) {
 	bathrooms := []models.Bathroom{}
 	for rows.Next() {
 		var b models.Bathroom
-		if err := rows.Scan(&b.ID, &b.Name, &b.Address, &b.Latitude, &b.Longitude, &b.IsAccessible, &b.CreatedAt, &b.Distance); err != nil {
+		var photoURL *string
+		if err := rows.Scan(
+			&b.ID, &b.Name, &b.Address, &b.Latitude, &b.Longitude, 
+			&b.IsAccessible, &b.HasChangingTable, &b.IsFree, 
+			&photoURL, &b.Status, &b.CreatedAt, &b.Distance,
+		); err != nil {
+			log.Printf("GetNearbyBathrooms Scan error: %v", err)
 			continue
+		}
+		if photoURL != nil {
+			b.PhotoURL = *photoURL
 		}
 		bathrooms = append(bathrooms, b)
 	}
