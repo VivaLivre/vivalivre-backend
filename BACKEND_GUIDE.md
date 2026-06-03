@@ -14,6 +14,8 @@ Este é o backend do VivaLivre, desenvolvido em Go para alta performance e auton
    DB_URL=postgres://usuario:senha@host:porta/database?sslmode=disable
    JWT_SECRET=sua_chave_secreta_aqui
    PORT=8080
+   SUPABASE_URL=https://your-project-id.supabase.co
+   SUPABASE_KEY=your-supabase-service-role-key
    ```
 
 2. **Preparar o Banco de Dados:**
@@ -37,6 +39,9 @@ Este é o backend do VivaLivre, desenvolvido em Go para alta performance e auton
 
 ### Protegidos (Requer header `Authorization: Bearer <TOKEN>`)
 - `GET /api/bathrooms/nearby`: Busca banheiros próximos via PostGIS.
+- `POST /api/bathrooms/request`: Submete sugestão de banheiro (multipart/form-data com foto).
+  - Campos: `name`, `address`, `latitude`, `longitude`, `is_accessible`, `has_changing_table`, `is_free`, `comment` (opcional), `photo` (ficheiro obrigatório)
+  - O banheiro é criado com `status: pending` e aguarda aprovação do admin.
 - `GET /api/health/entries`: Recupera entradas de saúde do usuário logado.
 - `POST /api/bathrooms/:bathroom_id/reviews`: Cria avaliação (nota geral, limpeza, acessibilidade, comentário).
 - `GET /api/bathrooms/:bathroom_id/reviews`: Lista avaliações com paginação/sort.
@@ -56,3 +61,4 @@ Este é o backend do VivaLivre, desenvolvido em Go para alta performance e auton
 - `internal/database/`: Singleton de conexão com PostgreSQL.
 - `internal/handlers/`: Controladores das rotas.
 - `internal/models/`: Estruturas de dados (User, Bathroom, HealthEntry).
+- `internal/storage/`: Upload de ficheiros para Supabase Storage.
