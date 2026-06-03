@@ -107,7 +107,7 @@ func ListReviews(c *gin.Context) {
 		       r.cleanliness_rating, r.accessibility_rating, r.spaciousness_rating,
 		       r.helpful_count, r.unhelpful_count, r.status, r.created_at, r.updated_at
 		FROM bathroom_reviews r
-		WHERE r.bathroom_id = $1 AND r.status = 'approved'
+		WHERE r.bathroom_id = $1 AND (r.status = 'approved' OR r.status IS NULL)
 		ORDER BY ` + orderBy + `
 		LIMIT $2 OFFSET $3
 	`
@@ -135,13 +135,12 @@ func ListReviews(c *gin.Context) {
 	}
 
 	// Contar total
-	var total int
-	countQuery := `SELECT COUNT(*) FROM bathroom_reviews WHERE bathroom_id = $1 AND status = 'approved'`
+	countQuery := `SELECT COUNT(*) FROM bathroom_reviews WHERE bathroom_id = $1 AND (status = 'approved' OR status IS NULL)`
 	db.QueryRow(ctx, countQuery, bathroomID).Scan(&total)
 
 	// Calcular média
 	var avgRating float64
-	avgQuery := `SELECT COALESCE(AVG(rating), 0) FROM bathroom_reviews WHERE bathroom_id = $1 AND status = 'approved'`
+	avgQuery := `SELECT COALESCE(AVG(rating), 0) FROM bathroom_reviews WHERE bathroom_id = $1 AND (status = 'approved' OR status IS NULL)`
 	db.QueryRow(ctx, avgQuery, bathroomID).Scan(&avgRating)
 
 	c.JSON(http.StatusOK, gin.H{
@@ -216,7 +215,7 @@ func GetRatingStats(c *gin.Context) {
 			COALESCE(AVG(accessibility_rating), 0) as avg_accessibility,
 			COALESCE(AVG(spaciousness_rating), 0) as avg_spaciousness
 		FROM bathroom_reviews
-		WHERE bathroom_id = $1 AND status = 'approved'
+		WHERE bathroom_id = $1 AND (status = 'approved' OR status IS NULL)
 	`
 
 	var stats models.BathroomRatingStats
@@ -240,7 +239,7 @@ func GetRatingStats(c *gin.Context) {
 	distQuery := `
 		SELECT rating, COUNT(*) as count
 		FROM bathroom_reviews
-		WHERE bathroom_id = $1 AND status = 'approved'
+		WHERE bathroom_id = $1 AND (status = 'approved' OR status IS NULL)
 		GROUP BY rating
 	`
 
