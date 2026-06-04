@@ -75,6 +75,10 @@ func EnsureRatingsSchema() error {
 		`ALTER TABLE bathrooms ADD COLUMN IF NOT EXISTS operating_hours JSONB DEFAULT '{"type": "unknown"}'::jsonb`,
 		`ALTER TABLE bathrooms ADD COLUMN IF NOT EXISTS observations TEXT`,
 		`ALTER TABLE bathrooms ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE SET NULL`,
+		`ALTER TABLE bathrooms ADD COLUMN IF NOT EXISTS has_changing_table BOOLEAN DEFAULT false`,
+		`ALTER TABLE bathrooms ADD COLUMN IF NOT EXISTS is_free BOOLEAN DEFAULT false`,
+		`ALTER TABLE bathrooms ADD COLUMN IF NOT EXISTS photo_url TEXT`,
+		`ALTER TABLE bathrooms ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'approved'`,
 
 		`CREATE TABLE IF NOT EXISTS review_helpful_votes (
 			id SERIAL PRIMARY KEY,
@@ -88,6 +92,26 @@ func EnsureRatingsSchema() error {
 		`CREATE INDEX IF NOT EXISTS idx_reviews_user ON bathroom_reviews(user_id)`,
 		`CREATE INDEX IF NOT EXISTS idx_reviews_created ON bathroom_reviews(created_at DESC)`,
 		`CREATE INDEX IF NOT EXISTS idx_helpful_votes_review ON review_helpful_votes(review_id)`,
+
+		`CREATE TABLE IF NOT EXISTS bathroom_reports (
+			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			bathroom_id INTEGER NOT NULL REFERENCES bathrooms(id) ON DELETE CASCADE,
+			user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+			reason VARCHAR(50) NOT NULL,
+			description TEXT,
+			status VARCHAR(20) DEFAULT 'pending',
+			created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+		)`,
+		`CREATE TABLE IF NOT EXISTS bathroom_suggestions (
+			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			bathroom_id INTEGER NOT NULL REFERENCES bathrooms(id) ON DELETE CASCADE,
+			user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+			suggested_updates JSONB NOT NULL,
+			status VARCHAR(20) DEFAULT 'pending',
+			created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+		)`,
+		`CREATE INDEX IF NOT EXISTS idx_bathroom_reports_bathroom ON bathroom_reports(bathroom_id)`,
+		`CREATE INDEX IF NOT EXISTS idx_bathroom_suggestions_bathroom ON bathroom_suggestions(bathroom_id)`,
 	}
 
 	for _, stmt := range statements {
