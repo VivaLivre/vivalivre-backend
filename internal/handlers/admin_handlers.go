@@ -771,3 +771,142 @@ func UpdateSuggestionStatus(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Suggestion status updated"})
 }
+
+// GetAdminUsers returns a paginated list of users with optional search.
+// GET /api/admin/users?page=1&limit=20&search=xyz
+func GetAdminUsers(c *gin.Context) {
+	db := database.GetDB()
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
+	search := strings.TrimSpace(c.DefaultQuery("search", ""))
+
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 || limit > 100 {
+		limit = 20
+	}
+	offset := (page - 1) * limit
+
+	var total int
+	users := []models.AdminUser{}
+
+	if search != "" {
+		likePattern := "%" + strings.ToLower(search) + "%"
+		if err := db.QueryRow(ctx,
+			`SELECT COUNT(*) FROM users WHERE LOWER(name) LIKE $1 OR LOWER(email) LIKE $1`,
+			likePattern).Scan(&total); err != nil {
+			log.Printf("GetAdminUsers count error: %v", err)
+		}
+		rows, err := db.Query(ctx,
+			`SELECT id, name, email, COALESCE(role,'user'), COALESCE(status,'active'), created_at
+			 FROM users
+			 WHERE LOWER(name) LIKE $1 OR LOWER(email) LIKE $1
+			 ORDER BY created_at DESC
+			 LIMIT $2 OFFSET $3`,
+			likePattern, limit, offset)
+		if err != nil {
+			log.Printf("GetAdminUsers query error: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch users"})
+			return
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var u models.AdminUser
+			if err := rows.Scan(&u.ID, &u.Name, &u.Email, &u.Role, &u.Status, &u.CreatedAt); err != nil {
+				log.Printf("GetAdminUsers scan error: %v", err)
+				continue
+			}
+			users = append(users, u)
+		}
+	} else {
+		if err := db.QueryRow(ctx, `SELECT COUNT(*) FROM users`).Scan(&total); err != nil {
+			log.Printf("GetAdminUsers count error: %v", err)
+		}
+		rows, err := db.Query(ctx,
+			`SELECT id, name, email, COALESCE(role,'user'), COALESCE(status,'active'), created_at
+			 FROM users
+			 ORDER BY created_at DESC
+			 LIMIT $1 OFFSET $2`,
+			limit, offset)
+		if err != nil {
+			log.Printf("GetAdminUsers query error: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch users"})
+			return
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var u models.AdminUser
+			if err := rows.Scan(&u.ID, &u.Name, &u.Email, &u.Role, &u.Status, &u.CreatedAt); err != nil {
+				log.Printf("GetAdminUsers scan error: %v", err)
+				continue
+			}
+			users = append(users, u)
+		}
+	}
+
+	totalPages := total / limit
+	if total%limit != 0 {
+		totalPages++
+	}
+
+	c.JSON(http.StatusOK, models.PaginatedUsersResponse{
+		Data: users,
+		Meta: models.PaginationMeta{
+			Total:      total,
+			Page:       page,
+			Limit:      limit,
+			TotalPages: totalPages,
+		},
+	})
+}
+
+
+// UpdateAdminUserStatus updates the status of a specific user.
+// PATCH /api/admin/users/:id/status
+func UpdateAdminUserStatus(c *gin.Context) {
+	userIDStr := c.Param("id")
+	userID, err := strconv.Atoi(userIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	var req models.UpdateUserStatusRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body. Expected 'status'."})
+		return
+	}
+
+	validStatuses := map[string]bool{"active": true, "suspended": true, "banned": true}
+	if !validStatuses[req.Status] {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid status. Must be 'active', 'suspended', or 'banned'."})
+		return
+	}
+
+	db := database.GetDB()
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	// Ensure status column exists (idempotent)
+	_, _ = db.Exec(ctx, `ALTER TABLE users ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'active'`)
+
+	tag, err := db.Exec(ctx,
+		`UPDATE users SET status = $1 WHERE id = $2`,
+		req.Status, userID)
+	if err != nil {
+		log.Printf("UpdateAdminUserStatus error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update user status"})
+		return
+	}
+	if tag.RowsAffected() == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": fmt.Sprintf("User status updated to '%s'", req.Status)})
+}
+

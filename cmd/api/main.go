@@ -72,6 +72,10 @@ func main() {
 		admin.PATCH("/reports/:id/status", handlers.UpdateReportStatus)
 		admin.GET("/suggestions", handlers.GetAllSuggestions)
 		admin.PATCH("/suggestions/:id/status", handlers.UpdateSuggestionStatus)
+
+		// Users Admin Routes
+		admin.GET("/users", handlers.GetAdminUsers)
+		admin.PATCH("/users/:id/status", handlers.UpdateAdminUserStatus)
 	}
 
 	// Protected Routes
