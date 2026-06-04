@@ -119,3 +119,77 @@ type BathroomRatingStats struct {
 type HelpfulVoteRequest struct {
 	IsHelpful bool `json:"is_helpful" binding:"required"`
 }
+
+// BathroomReport representa um report feito por um utilizador
+type BathroomReport struct {
+	ID          string    `json:"id"`
+	BathroomID  int       `json:"bathroom_id"`
+	BathroomName string   `json:"bathroom_name,omitempty"`
+	UserID      int       `json:"user_id"`
+	UserEmail   string    `json:"user_email,omitempty"`
+	Reason      string    `json:"reason"`
+	Description *string   `json:"description,omitempty"`
+	Status      string    `json:"status"`
+	CreatedAt   time.Time `json:"created_at"`
+}
+
+// CreateReportRequest é o payload para criar um report
+type CreateReportRequest struct {
+	Reason      string  `json:"reason" binding:"required"`
+	Description *string `json:"description,omitempty"`
+}
+
+// BathroomSuggestion representa uma sugestão de alteração
+type BathroomSuggestion struct {
+	ID               string                 `json:"id"`
+	BathroomID       int                    `json:"bathroom_id"`
+	BathroomName     string                 `json:"bathroom_name,omitempty"`
+	UserID           int                    `json:"user_id"`
+	UserEmail        string                 `json:"user_email,omitempty"`
+	SuggestedUpdates json.RawMessage        `json:"suggested_updates"`
+	Status           string                 `json:"status"`
+	CreatedAt        time.Time              `json:"created_at"`
+}
+
+// CreateSuggestionRequest é o payload para criar uma sugestão
+type CreateSuggestionRequest struct {
+	SuggestedUpdates json.RawMessage        `json:"suggested_updates" binding:"required"`
+}
+// UpdateReportStatusRequest é o payload para atualizar o status do report
+type UpdateReportStatusRequest struct {
+	Status string `json:"status" binding:"required"`
+}
+
+// UpdateSuggestionStatusRequest é o payload para atualizar o status da sugestão
+type UpdateSuggestionStatusRequest struct {
+	Status string `json:"status" binding:"required"`
+}
+
+// UpdateBathroomAdminRequest represents a partial update for a bathroom by an admin
+type UpdateBathroomAdminRequest struct {
+	Name             *string          `json:"name,omitempty"`
+	Address          *string          `json:"address,omitempty"`
+	Latitude         *float64         `json:"latitude,omitempty"`
+	Longitude        *float64         `json:"longitude,omitempty"`
+	IsAccessible     *bool            `json:"is_accessible,omitempty"`
+	HasChangingTable *bool            `json:"has_changing_table,omitempty"`
+	IsFree           *bool            `json:"is_free,omitempty"`
+	OperatingHours   *json.RawMessage `json:"operating_hours,omitempty"`
+	Observations     *string          `json:"observations,omitempty"`
+	Status           *string          `json:"status,omitempty"`
+	PhotoUrl         *string          `json:"photo_url,omitempty"`
+}
+
+// PaginationMeta holds pagination metadata
+type PaginationMeta struct {
+	Total      int `json:"total"`
+	Page       int `json:"page"`
+	Limit      int `json:"limit"`
+	TotalPages int `json:"total_pages"`
+}
+
+// PaginatedBathroomsResponse is the response for paginated bathrooms
+type PaginatedBathroomsResponse struct {
+	Data []Bathroom     `json:"data"`
+	Meta PaginationMeta `json:"meta"`
+}
