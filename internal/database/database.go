@@ -79,6 +79,7 @@ func EnsureRatingsSchema() error {
 		`ALTER TABLE bathrooms ADD COLUMN IF NOT EXISTS is_free BOOLEAN DEFAULT false`,
 		`ALTER TABLE bathrooms ADD COLUMN IF NOT EXISTS photo_url TEXT`,
 		`ALTER TABLE bathrooms ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'approved'`,
+		`ALTER TABLE users ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'active'`,
 
 		`CREATE TABLE IF NOT EXISTS review_helpful_votes (
 			id SERIAL PRIMARY KEY,

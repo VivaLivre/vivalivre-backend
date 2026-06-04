@@ -193,3 +193,25 @@ type PaginatedBathroomsResponse struct {
 	Data []Bathroom     `json:"data"`
 	Meta PaginationMeta `json:"meta"`
 }
+
+// AdminUser represents a user as seen by an admin
+type AdminUser struct {
+	ID        int       `json:"id"`
+	Name      string    `json:"name"`
+	Email     string    `json:"email"`
+	Role      string    `json:"role"`
+	Status    string    `json:"status"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+// PaginatedUsersResponse is the response for paginated users
+type PaginatedUsersResponse struct {
+	Data []AdminUser    `json:"data"`
+	Meta PaginationMeta `json:"meta"`
+}
+
+// UpdateUserStatusRequest is the payload for updating a user's status
+type UpdateUserStatusRequest struct {
+	Status string `json:"status" binding:"required"`
+}
+

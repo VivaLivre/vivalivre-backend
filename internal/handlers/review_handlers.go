@@ -135,6 +135,7 @@ func ListReviews(c *gin.Context) {
 	}
 
 	// Contar total
+	var total int
 	countQuery := `SELECT COUNT(*) FROM bathroom_reviews WHERE bathroom_id = $1 AND (status = 'approved' OR status IS NULL)`
 	db.QueryRow(ctx, countQuery, bathroomID).Scan(&total)
 
