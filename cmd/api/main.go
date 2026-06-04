@@ -57,6 +57,7 @@ func main() {
 	admin := r.Group("/api/admin")
 	admin.Use(auth.AuthMiddleware(), auth.RequireAdmin())
 	{
+		admin.GET("/dashboard/overview", handlers.GetDashboardOverview)
 		admin.GET("/bathrooms/pending", handlers.GetPendingBathrooms)
 		admin.PATCH("/bathrooms/:id/status", handlers.UpdateBathroomStatus)
 	}

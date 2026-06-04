@@ -16,7 +16,33 @@ import (
 // It receives a multipart/form-data with bathroom suggestion data and a photo,
 // uploads the photo to Supabase Storage, and inserts the bathroom with status 'pending'.
 func RequestBathroom(c *gin.Context) {
-	// --- 1. Parse & validate form fields ---
+	// --- 1. Extrair userID e validar spam (Rate Limiting) ---
+	
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Utilizador não autenticado."})
+		return
+	}
+
+	db := database.GetDB()
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	// Contar quantos banheiros este user criou nas últimas 24 horas
+	var recentCount int
+	err := db.QueryRow(ctx, "SELECT COUNT(*) FROM bathrooms WHERE user_id = $1 AND created_at > NOW() - INTERVAL '24 hours'", userID).Scan(&recentCount)
+	if err != nil {
+		log.Printf("RequestBathroom: failed to count recent bathrooms: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Falha ao verificar limites do utilizador."})
+		return
+	}
+
+	if recentCount >= 10 {
+		c.JSON(http.StatusTooManyRequests, gin.H{"error": "Limite diário atingido. Você pode abrir até 10 requisições a cada 24 horas."})
+		return
+	}
+
+	// --- 2. Parse & validate form fields ---
 
 	name := c.PostForm("name")
 	address := c.PostForm("address")
@@ -88,15 +114,11 @@ func RequestBathroom(c *gin.Context) {
 
 	// --- 4. Insert into PostgreSQL ---
 
-	db := database.GetDB()
 	query := `
-		INSERT INTO bathrooms (name, address, location, is_accessible, has_changing_table, is_free, comment, photo_url, operating_hours)
-		VALUES ($1, $2, ST_SetSRID(ST_MakePoint($3, $4), 4326), $5, $6, $7, $8, $9, $10)
+		INSERT INTO bathrooms (name, address, location, is_accessible, has_changing_table, is_free, comment, photo_url, operating_hours, user_id)
+		VALUES ($1, $2, ST_SetSRID(ST_MakePoint($3, $4), 4326), $5, $6, $7, $8, $9, $10, $11)
 		RETURNING id, created_at
 	`
-
-	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
-	defer cancel()
 
 	var bathroomID int
 	var createdAt time.Time
@@ -111,6 +133,7 @@ func RequestBathroom(c *gin.Context) {
 		nilIfEmpty(comment), // $8
 		photoURL,         // $9
 		operatingHoursStr, // $10
+		userID,           // $11
 	).Scan(&bathroomID, &createdAt)
 
 	if err != nil {
