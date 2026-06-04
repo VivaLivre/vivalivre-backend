@@ -160,7 +160,10 @@ func GetNearbyBathrooms(c *gin.Context) {
 	`
 	
 	// Note: ST_MakePoint takes (longitude, latitude) -> ($1, $2) must be (lng, lat)
-	rows, err := db.Query(context.Background(), query, lng, lat, radius)
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	rows, err := db.Query(ctx, query, lng, lat, radius)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch nearby bathrooms"})
 		return
