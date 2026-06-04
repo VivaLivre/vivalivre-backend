@@ -60,6 +60,18 @@ func main() {
 		admin.GET("/dashboard/overview", handlers.GetDashboardOverview)
 		admin.GET("/bathrooms/pending", handlers.GetPendingBathrooms)
 		admin.PATCH("/bathrooms/:id/status", handlers.UpdateBathroomStatus)
+
+		// Full CRUD for Bathrooms
+		admin.GET("/bathrooms", handlers.GetAdminBathrooms)
+		admin.POST("/bathrooms", handlers.CreateAdminBathroom)
+		admin.PATCH("/bathrooms/:id", handlers.UpdateAdminBathroom)
+		admin.DELETE("/bathrooms/:id", handlers.DeleteAdminBathroom)
+
+		// Crowdsource Admin Routes
+		admin.GET("/reports", handlers.GetAllReports)
+		admin.PATCH("/reports/:id/status", handlers.UpdateReportStatus)
+		admin.GET("/suggestions", handlers.GetAllSuggestions)
+		admin.PATCH("/suggestions/:id/status", handlers.UpdateSuggestionStatus)
 	}
 
 	// Protected Routes
@@ -81,6 +93,10 @@ func main() {
 		api.PUT("/reviews/:review_id", handlers.UpdateReview)
 		api.DELETE("/reviews/:review_id", handlers.DeleteReview)
 		api.POST("/reviews/:review_id/helpful", handlers.VoteHelpful)
+
+		// Crowdsourcing routes
+		api.POST("/bathrooms/:bathroom_id/report", handlers.CreateBathroomReport)
+		api.POST("/bathrooms/:bathroom_id/suggest", handlers.CreateBathroomSuggestion)
 	}
 
 	// Start Server
