@@ -64,3 +64,42 @@ func UploadToSupabase(bucket string, fileReader io.Reader, originalFilename stri
 
 	return publicURL, nil
 }
+
+// DeleteFromSupabase deletes a file from the Supabase Storage bucket.
+//
+// Parameters:
+//   - bucket: the storage bucket name (e.g. "bathroom_photos")
+//   - objectName: the name of the file to delete
+func DeleteFromSupabase(bucket string, objectName string) error {
+	supabaseURL := os.Getenv("SUPABASE_URL")
+	supabaseKey := os.Getenv("SUPABASE_KEY")
+
+	if supabaseURL == "" || supabaseKey == "" {
+		return fmt.Errorf("SUPABASE_URL and SUPABASE_KEY environment variables are required")
+	}
+
+	// Build the Supabase Storage REST API URL
+	// DELETE /storage/v1/object/{bucket}/{objectName}
+	deleteURL := fmt.Sprintf("%s/storage/v1/object/%s/%s", supabaseURL, bucket, objectName)
+
+	req, err := http.NewRequest(http.MethodDelete, deleteURL, nil)
+	if err != nil {
+		return fmt.Errorf("failed to create delete request: %w", err)
+	}
+
+	req.Header.Set("Authorization", "Bearer "+supabaseKey)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to delete from Supabase Storage: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("supabase delete failed (status %d): %s", resp.StatusCode, string(body))
+	}
+
+	return nil
+}
