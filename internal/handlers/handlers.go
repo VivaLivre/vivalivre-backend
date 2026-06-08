@@ -442,8 +442,8 @@ func UpdateProfile(c *gin.Context) {
 			return
 		}
 
-		// Upload photo to Supabase Storage using the "bathroom_photos" bucket directly
-		url, uploadErr := storage.UploadToSupabase("bathroom_photos", file, header.Filename, contentType)
+		// Upload photo to Supabase Storage using the "avatars" bucket directly
+		url, uploadErr := storage.UploadToSupabase("avatars", file, header.Filename, contentType)
 		if uploadErr != nil {
 			log.Printf("UpdateProfile: failed to upload photo: %v", uploadErr)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Falha ao enviar a foto de perfil para o Supabase."})
