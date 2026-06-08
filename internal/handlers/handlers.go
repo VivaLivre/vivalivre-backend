@@ -11,6 +11,7 @@ import (
 	"github.com/gabrieljose2004/vivalivre-backend/internal/auth"
 	"github.com/gabrieljose2004/vivalivre-backend/internal/database"
 	"github.com/gabrieljose2004/vivalivre-backend/internal/models"
+	"github.com/gabrieljose2004/vivalivre-backend/internal/storage"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -32,11 +33,13 @@ func Register(c *gin.Context) {
 
 	db := database.GetDB()
 	var user models.User
-	query := `INSERT INTO users (name, email, password_hash) VALUES ($1, $2, $3) RETURNING id, name, email, created_at`
+	query := `INSERT INTO users (name, email, password_hash) VALUES ($1, $2, $3) RETURNING id, name, email, avatar_url, height, weight, birth_date, created_at`
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
 	defer cancel()
 
-	err = db.QueryRow(ctx, query, req.Name, req.Email, hash).Scan(&user.ID, &user.Name, &user.Email, &user.CreatedAt)
+	err = db.QueryRow(ctx, query, req.Name, req.Email, hash).Scan(
+		&user.ID, &user.Name, &user.Email, &user.AvatarURL, &user.Height, &user.Weight, &user.BirthDate, &user.CreatedAt,
+	)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
@@ -77,11 +80,13 @@ func Login(c *gin.Context) {
 	db := database.GetDB()
 	var user models.User
 	var hash string
-	query := `SELECT id, name, email, password_hash, created_at FROM users WHERE email = $1`
+	query := `SELECT id, name, email, password_hash, avatar_url, height, weight, birth_date, created_at FROM users WHERE email = $1`
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
 	defer cancel()
 
-	err := db.QueryRow(ctx, query, req.Email).Scan(&user.ID, &user.Name, &user.Email, &hash, &user.CreatedAt)
+	err := db.QueryRow(ctx, query, req.Email).Scan(
+		&user.ID, &user.Name, &user.Email, &hash, &user.AvatarURL, &user.Height, &user.Weight, &user.BirthDate, &user.CreatedAt,
+	)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 		return
@@ -110,8 +115,10 @@ func GetMe(c *gin.Context) {
 
 	db := database.GetDB()
 	var user models.User
-	query := `SELECT id, name, email, created_at FROM users WHERE id = $1`
-	err := db.QueryRow(context.Background(), query, userID).Scan(&user.ID, &user.Name, &user.Email, &user.CreatedAt)
+	query := `SELECT id, name, email, avatar_url, height, weight, birth_date, created_at FROM users WHERE id = $1`
+	err := db.QueryRow(context.Background(), query, userID).Scan(
+		&user.ID, &user.Name, &user.Email, &user.AvatarURL, &user.Height, &user.Weight, &user.BirthDate, &user.CreatedAt,
+	)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
 		return
@@ -318,8 +325,10 @@ func GoogleLogin(c *gin.Context) {
 	var status string
 
 	// Buscar utilizador na base de dados por email
-	querySelect := `SELECT id, name, email, status, created_at FROM users WHERE email = $1`
-	err = db.QueryRow(ctx, querySelect, email).Scan(&user.ID, &user.Name, &user.Email, &status, &user.CreatedAt)
+	querySelect := `SELECT id, name, email, status, avatar_url, height, weight, birth_date, created_at FROM users WHERE email = $1`
+	err = db.QueryRow(ctx, querySelect, email).Scan(
+		&user.ID, &user.Name, &user.Email, &status, &user.AvatarURL, &user.Height, &user.Weight, &user.BirthDate, &user.CreatedAt,
+	)
 
 	if err == nil {
 		// O utilizador existe
@@ -349,8 +358,10 @@ func GoogleLogin(c *gin.Context) {
 	}
 
 	// Criar novo utilizador (password_hash fica NULL)
-	queryInsert := `INSERT INTO users (name, email, password_hash) VALUES ($1, $2, NULL) RETURNING id, name, email, created_at`
-	err = db.QueryRow(ctx, queryInsert, name, email).Scan(&user.ID, &user.Name, &user.Email, &user.CreatedAt)
+	queryInsert := `INSERT INTO users (name, email, password_hash) VALUES ($1, $2, NULL) RETURNING id, name, email, avatar_url, height, weight, birth_date, created_at`
+	err = db.QueryRow(ctx, queryInsert, name, email).Scan(
+		&user.ID, &user.Name, &user.Email, &user.AvatarURL, &user.Height, &user.Weight, &user.BirthDate, &user.CreatedAt,
+	)
 	if err != nil {
 		log.Printf("GoogleLogin db insert error: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Não foi possível criar o utilizador"})
@@ -368,3 +379,114 @@ func GoogleLogin(c *gin.Context) {
 		User:  user,
 	})
 }
+
+// UpdateProfile handles updating the user's profile information
+func UpdateProfile(c *gin.Context) {
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Utilizador não autenticado."})
+		return
+	}
+
+	name := c.PostForm("name")
+	if name == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "O nome é obrigatório."})
+		return
+	}
+
+	var height *int
+	if hStr := c.PostForm("height"); hStr != "" {
+		if h, err := strconv.Atoi(hStr); err == nil {
+			height = &h
+		} else {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Altura inválida."})
+			return
+		}
+	}
+
+	var weight *float64
+	if wStr := c.PostForm("weight"); wStr != "" {
+		if w, err := strconv.ParseFloat(wStr, 64); err == nil {
+			weight = &w
+		} else {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Peso inválido."})
+			return
+		}
+	}
+
+	var birthDate *time.Time
+	if bdStr := c.PostForm("birth_date"); bdStr != "" {
+		if t, err := time.Parse("2006-01-02", bdStr); err == nil {
+			birthDate = &t
+		} else if t, err := time.Parse(time.RFC3339, bdStr); err == nil {
+			birthDate = &t
+		} else {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Data de nascimento inválida."})
+			return
+		}
+	}
+
+	db := database.GetDB()
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	var avatarURL *string
+	file, header, err := c.Request.FormFile("photo")
+	if err == nil {
+		defer file.Close()
+		contentType := header.Header.Get("Content-Type")
+		if !isAllowedImageType(contentType) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Formato de imagem não suportado. Use JPEG, PNG ou WebP."})
+			return
+		}
+
+		const maxFileSize = 5 << 20 // 5 MB
+		if header.Size > maxFileSize {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "A foto excede o tamanho máximo de 5 MB."})
+			return
+		}
+
+		// Try to upload to "avatars" bucket first, if it fails fallback to "bathroom_photos"
+		url, uploadErr := storage.UploadToSupabase("avatars", file, header.Filename, contentType)
+		if uploadErr != nil {
+			log.Printf("UpdateProfile: failed to upload to avatars bucket: %v. Trying bathroom_photos bucket...", uploadErr)
+			url, uploadErr = storage.UploadToSupabase("bathroom_photos", file, header.Filename, contentType)
+			if uploadErr != nil {
+				log.Printf("UpdateProfile: failed to upload photo: %v", uploadErr)
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Falha ao enviar a foto de perfil."})
+				return
+			}
+		}
+		avatarURL = &url
+	}
+
+	var query string
+	var errUpdate error
+	if avatarURL != nil {
+		query = `UPDATE users SET name = $1, height = $2, weight = $3, birth_date = $4, avatar_url = $5 WHERE id = $6`
+		_, errUpdate = db.Exec(ctx, query, name, height, weight, birthDate, *avatarURL, userID)
+	} else {
+		query = `UPDATE users SET name = $1, height = $2, weight = $3, birth_date = $4 WHERE id = $5`
+		_, errUpdate = db.Exec(ctx, query, name, height, weight, birthDate, userID)
+	}
+
+	if errUpdate != nil {
+		log.Printf("UpdateProfile database error: %v", errUpdate)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Falha ao atualizar perfil na base de dados."})
+		return
+	}
+
+	var user models.User
+	querySelect := `SELECT id, name, email, avatar_url, height, weight, birth_date, created_at FROM users WHERE id = $1`
+	err = db.QueryRow(ctx, querySelect, userID).Scan(
+		&user.ID, &user.Name, &user.Email, &user.AvatarURL, &user.Height, &user.Weight, &user.BirthDate, &user.CreatedAt,
+	)
+	if err != nil {
+		log.Printf("UpdateProfile select error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao carregar dados atualizados do utilizador."})
+		return
+	}
+
+	c.JSON(http.StatusOK, user)
+}
+
