@@ -203,9 +203,16 @@ func GetNearbyBathrooms(c *gin.Context) {
 // GetHealthEntries returns health data for the logged in user
 func GetHealthEntries(c *gin.Context) {
 	userID := c.MustGet("userID").(int)
-	
+	dateFilter := c.Query("date")
+
+	query := `SELECT id, user_id, type, severity, description, COALESCE(symptoms, '{}'), entry_date FROM health_entries WHERE user_id = $1`
+	if dateFilter == "today" {
+		query += ` AND DATE(entry_date) = CURRENT_DATE`
+	}
+	query += ` ORDER BY entry_date DESC`
+
 	db := database.GetDB()
-	rows, err := db.Query(context.Background(), `SELECT id, user_id, type, severity, description, COALESCE(symptoms, '{}'), entry_date FROM health_entries WHERE user_id = $1 ORDER BY entry_date DESC`, userID)
+	rows, err := db.Query(context.Background(), query, userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch health entries"})
 		return
