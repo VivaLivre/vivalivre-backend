@@ -85,6 +85,7 @@ func main() {
 	api.Use(auth.AuthMiddleware())
 	{
 		api.GET("/users/me", handlers.GetMe)
+		api.PUT("/users/profile", handlers.UpdateProfile)
 		api.GET("/bathrooms/nearby", handlers.GetNearbyBathrooms)
 		api.POST("/bathrooms/request", handlers.RequestBathroom)
 		api.GET("/health/entries", handlers.GetHealthEntries)
