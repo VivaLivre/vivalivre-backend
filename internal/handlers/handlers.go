@@ -12,6 +12,7 @@ import (
 	"github.com/gabrieljose2004/vivalivre-backend/internal/database"
 	"github.com/gabrieljose2004/vivalivre-backend/internal/models"
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
@@ -275,4 +276,88 @@ func DeleteHealthEntry(c *gin.Context) {
 	}
 
 	c.Status(http.StatusNoContent)
+}
+
+// GoogleLogin handles authentication via Google Sign-In
+func GoogleLogin(c *gin.Context) {
+	var req models.GoogleAuthRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	payload, err := auth.VerifyGoogleToken(ctx, req.IDToken)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid Google token: " + err.Error()})
+		return
+	}
+
+	email, ok := payload.Claims["email"].(string)
+	if !ok || email == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Token payload does not contain a valid email"})
+		return
+	}
+
+	name, _ := payload.Claims["name"].(string)
+	if name == "" {
+		name = email
+	}
+
+	db := database.GetDB()
+	var user models.User
+	var status string
+
+	// Buscar utilizador na base de dados por email
+	querySelect := `SELECT id, name, email, status, created_at FROM users WHERE email = $1`
+	err = db.QueryRow(ctx, querySelect, email).Scan(&user.ID, &user.Name, &user.Email, &status, &user.CreatedAt)
+
+	if err == nil {
+		// O utilizador existe
+		if status == "banned" || status == "suspended" {
+			c.JSON(http.StatusForbidden, gin.H{"error": "O utilizador está banido ou suspenso."})
+			return
+		}
+
+		token, err := auth.GenerateToken(user.ID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
+			return
+		}
+
+		c.JSON(http.StatusOK, models.AuthResponse{
+			Token: token,
+			User:  user,
+		})
+		return
+	}
+
+	// Se for erro de NoRows, criamos um novo utilizador
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) && !errors.Is(err, context.Canceled) {
+		log.Printf("GoogleLogin db select error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao consultar base de dados"})
+		return
+	}
+
+	// Criar novo utilizador (password_hash fica NULL)
+	queryInsert := `INSERT INTO users (name, email, password_hash) VALUES ($1, $2, NULL) RETURNING id, name, email, created_at`
+	err = db.QueryRow(ctx, queryInsert, name, email).Scan(&user.ID, &user.Name, &user.Email, &user.CreatedAt)
+	if err != nil {
+		log.Printf("GoogleLogin db insert error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Não foi possível criar o utilizador"})
+		return
+	}
+
+	token, err := auth.GenerateToken(user.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
+		return
+	}
+
+	c.JSON(http.StatusCreated, models.AuthResponse{
+		Token: token,
+		User:  user,
+	})
 }
