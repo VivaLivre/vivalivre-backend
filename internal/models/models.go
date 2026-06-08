@@ -6,11 +6,15 @@ import (
 )
 
 type User struct {
-	ID           int       `json:"id"`
-	Name         string    `json:"name"`
-	Email        string    `json:"email"`
-	PasswordHash string    `json:"-"`
-	CreatedAt    time.Time `json:"created_at"`
+	ID           int        `json:"id"`
+	Name         string     `json:"name"`
+	Email        string     `json:"email"`
+	PasswordHash string     `json:"-"`
+	AvatarURL    *string    `json:"avatar_url,omitempty"`
+	Height       *int       `json:"height,omitempty"`
+	Weight       *float64   `json:"weight,omitempty"`
+	BirthDate    *time.Time `json:"birth_date,omitempty"`
+	CreatedAt    time.Time  `json:"created_at"`
 }
 
 type Bathroom struct {
