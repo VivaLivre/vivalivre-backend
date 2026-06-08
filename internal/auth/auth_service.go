@@ -1,12 +1,14 @@
 package auth
 
 import (
+	"context"
 	"errors"
 	"os"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
+	"google.golang.org/api/idtoken"
 )
 
 var jwtSecret []byte
@@ -62,4 +64,10 @@ func ValidateToken(tokenString string) (int, error) {
 	}
 
 	return 0, errors.New("invalid token")
+}
+
+// VerifyGoogleToken validates the Google ID token and returns the payload.
+func VerifyGoogleToken(ctx context.Context, idToken string) (*idtoken.Payload, error) {
+	googleClientID := os.Getenv("GOOGLE_CLIENT_ID")
+	return idtoken.Validate(ctx, idToken, googleClientID)
 }
