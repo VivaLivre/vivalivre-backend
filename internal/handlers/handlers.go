@@ -388,9 +388,9 @@ func UpdateProfile(c *gin.Context) {
 		return
 	}
 
-	name := c.PostForm("name")
-	if name == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "O nome é obrigatório."})
+	email := c.PostForm("email")
+	if email == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "O email é obrigatório."})
 		return
 	}
 
@@ -414,21 +414,17 @@ func UpdateProfile(c *gin.Context) {
 		}
 	}
 
-	var birthDate *time.Time
-	if bdStr := c.PostForm("birth_date"); bdStr != "" {
-		if t, err := time.Parse("2006-01-02", bdStr); err == nil {
-			birthDate = &t
-		} else if t, err := time.Parse(time.RFC3339, bdStr); err == nil {
-			birthDate = &t
-		} else {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Data de nascimento inválida."})
-			return
-		}
-	}
-
 	db := database.GetDB()
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
 	defer cancel()
+
+	// Check if email is already in use by another user
+	var count int
+	errCount := db.QueryRow(ctx, "SELECT COUNT(*) FROM users WHERE email = $1 AND id != $2", email, userID).Scan(&count)
+	if errCount == nil && count > 0 {
+		c.JSON(http.StatusConflict, gin.H{"error": "Este email já está a ser utilizado por outro utilizador."})
+		return
+	}
 
 	var avatarURL *string
 	file, header, err := c.Request.FormFile("photo")
@@ -463,11 +459,11 @@ func UpdateProfile(c *gin.Context) {
 	var query string
 	var errUpdate error
 	if avatarURL != nil {
-		query = `UPDATE users SET name = $1, height = $2, weight = $3, birth_date = $4, avatar_url = $5 WHERE id = $6`
-		_, errUpdate = db.Exec(ctx, query, name, height, weight, birthDate, *avatarURL, userID)
+		query = `UPDATE users SET email = $1, height = $2, weight = $3, avatar_url = $4 WHERE id = $5`
+		_, errUpdate = db.Exec(ctx, query, email, height, weight, *avatarURL, userID)
 	} else {
-		query = `UPDATE users SET name = $1, height = $2, weight = $3, birth_date = $4 WHERE id = $5`
-		_, errUpdate = db.Exec(ctx, query, name, height, weight, birthDate, userID)
+		query = `UPDATE users SET email = $1, height = $2, weight = $3 WHERE id = $4`
+		_, errUpdate = db.Exec(ctx, query, email, height, weight, userID)
 	}
 
 	if errUpdate != nil {
