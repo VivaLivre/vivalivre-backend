@@ -72,6 +72,7 @@ func EnsureRatingsSchema() error {
 			UNIQUE(bathroom_id, user_id)
 		)`,
 		`ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(50) DEFAULT 'user'`,
+		`ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL`,
 		`ALTER TABLE bathrooms ADD COLUMN IF NOT EXISTS operating_hours JSONB DEFAULT '{"type": "unknown"}'::jsonb`,
 		`ALTER TABLE bathrooms ADD COLUMN IF NOT EXISTS observations TEXT`,
 		`ALTER TABLE bathrooms ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE SET NULL`,

@@ -53,6 +53,8 @@ func main() {
 		authGroup.POST("/login", handlers.Login)
 	}
 
+	r.POST("/api/auth/google", handlers.GoogleLogin)
+
 	// Admin Routes (Protegido por JWT + Validação de Role 'admin')
 	admin := r.Group("/api/admin")
 	admin.Use(auth.AuthMiddleware(), auth.RequireAdmin())

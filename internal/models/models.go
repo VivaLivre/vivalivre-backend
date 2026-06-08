@@ -66,6 +66,10 @@ type AuthResponse struct {
 	User  User   `json:"user"`
 }
 
+type GoogleAuthRequest struct {
+	IDToken string `json:"id_token" binding:"required"`
+}
+
 // BathroomReview representa uma avaliação de banheiro
 type BathroomReview struct {
 	ID                  int       `json:"id"`
