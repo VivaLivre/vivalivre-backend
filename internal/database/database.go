@@ -81,6 +81,10 @@ func EnsureRatingsSchema() error {
 		`ALTER TABLE bathrooms ADD COLUMN IF NOT EXISTS photo_url TEXT`,
 		`ALTER TABLE bathrooms ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'approved'`,
 		`ALTER TABLE users ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'active'`,
+		`ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT`,
+		`ALTER TABLE users ADD COLUMN IF NOT EXISTS height INTEGER`,
+		`ALTER TABLE users ADD COLUMN IF NOT EXISTS weight DOUBLE PRECISION`,
+		`ALTER TABLE users ADD COLUMN IF NOT EXISTS birth_date DATE`,
 
 		`CREATE TABLE IF NOT EXISTS review_helpful_votes (
 			id SERIAL PRIMARY KEY,
