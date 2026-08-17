@@ -80,15 +80,21 @@ func Login(c *gin.Context) {
 	db := database.GetDB()
 	var user models.User
 	var hash string
-	query := `SELECT id, name, email, password_hash, avatar_url, height, weight, birth_date, created_at FROM users WHERE email = $1`
+	var status *string
+	query := `SELECT id, name, email, password_hash, status, avatar_url, height, weight, birth_date, created_at FROM users WHERE email = $1`
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
 	defer cancel()
 
 	err := db.QueryRow(ctx, query, req.Email).Scan(
-		&user.ID, &user.Name, &user.Email, &hash, &user.AvatarURL, &user.Height, &user.Weight, &user.BirthDate, &user.CreatedAt,
+		&user.ID, &user.Name, &user.Email, &hash, &status, &user.AvatarURL, &user.Height, &user.Weight, &user.BirthDate, &user.CreatedAt,
 	)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
+		return
+	}
+
+	if status != nil && (*status == "banned" || *status == "suspended") {
+		c.JSON(http.StatusForbidden, gin.H{"error": "O utilizador está banido ou suspenso."})
 		return
 	}
 
