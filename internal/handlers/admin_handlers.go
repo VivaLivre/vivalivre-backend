@@ -33,27 +33,24 @@ func GetDashboardOverview(c *gin.Context) {
 	db.QueryRow(ctx, "SELECT count(*) FROM users WHERE created_at >= date_trunc('month', current_date)").Scan(&usersThisMonth)
 	db.QueryRow(ctx, "SELECT count(*) FROM bathrooms WHERE status = 'pending'").Scan(&pendingSuggestions)
 
+	var pendingReviews int
+	var approvalsToday int
+	db.QueryRow(ctx, "SELECT count(*) FROM bathroom_reviews WHERE status = 'pending'").Scan(&pendingReviews)
+	db.QueryRow(ctx, "SELECT count(*) FROM bathrooms WHERE status = 'approved' AND created_at >= current_date").Scan(&approvalsToday)
+
 	// Since we don't have updated_at for approvals or a separate table for historical actions yet,
-	// we'll return default/mock values for the more complex analytical metrics to satisfy the dashboard UI.
+	// we'll return empty arrays instead of mock data for the dashboard UI to prevent misleading the admin.
 	c.JSON(http.StatusOK, gin.H{
 		"totalLocations":     totalLocations,
 		"locationsThisMonth": locationsThisMonth,
 		"activeUsers":        activeUsers,
 		"usersThisMonth":     usersThisMonth,
-		"pendingReviews":     0,
-		"approvalsToday":     0,
-		"approvalRate":       100.0,
+		"pendingReviews":     pendingReviews,
+		"approvalsToday":     approvalsToday,
+		"approvalRate":       100.0, // Simplification since history is not kept
 		"pendingSuggestions": pendingSuggestions,
-		"weeklyActivity": []gin.H{
-			{"day": "Segunda", "approved": 34, "rejected": 5},
-			{"day": "Terça", "approved": 28, "rejected": 3},
-			{"day": "Quarta", "approved": 42, "rejected": 7},
-			{"day": "Quinta", "approved": 38, "rejected": 4},
-			{"day": "Sexta", "approved": 45, "rejected": 6},
-			{"day": "Sábado", "approved": 31, "rejected": 2},
-			{"day": "Domingo", "approved": 24, "rejected": 3},
-		},
-		"recentActivities": []gin.H{},
+		"weeklyActivity":     []gin.H{},
+		"recentActivities":   []gin.H{},
 	})
 }
 
