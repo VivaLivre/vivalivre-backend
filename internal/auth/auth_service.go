@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"errors"
+	"log"
 	"os"
 	"time"
 
@@ -16,7 +17,7 @@ var jwtSecret []byte
 func init() {
 	secret := os.Getenv("JWT_SECRET")
 	if secret == "" {
-		secret = "vivalivre-super-secret-key-change-me"
+		log.Fatal("JWT_SECRET environment variable is required and cannot be empty")
 	}
 	jwtSecret = []byte(secret)
 }
