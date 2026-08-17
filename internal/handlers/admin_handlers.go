@@ -891,9 +891,6 @@ func UpdateAdminUserStatus(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
 	defer cancel()
 
-	// Ensure status column exists (idempotent)
-	_, _ = db.Exec(ctx, `ALTER TABLE users ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'active'`)
-
 	tag, err := db.Exec(ctx,
 		`UPDATE users SET status = $1 WHERE id = $2`,
 		req.Status, userID)
