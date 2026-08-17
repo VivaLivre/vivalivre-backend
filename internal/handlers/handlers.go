@@ -93,6 +93,11 @@ func Login(c *gin.Context) {
 		return
 	}
 
+	if status != nil && (*status == "banned" || *status == "suspended") {
+		c.JSON(http.StatusForbidden, gin.H{"error": "O utilizador está banido ou suspenso."})
+		return
+	}
+
 	if !auth.CheckPassword(req.Password, hash) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 		return
