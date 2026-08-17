@@ -33,12 +33,12 @@ func Register(c *gin.Context) {
 
 	db := database.GetDB()
 	var user models.User
-	query := `INSERT INTO users (name, email, password_hash) VALUES ($1, $2, $3) RETURNING id, name, email, avatar_url, height, weight, birth_date, created_at`
+	query := `INSERT INTO users (name, email, password_hash, condition) VALUES ($1, $2, $3, $4) RETURNING id, name, email, avatar_url, height, weight, birth_date, condition, created_at`
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
 	defer cancel()
 
-	err = db.QueryRow(ctx, query, req.Name, req.Email, hash).Scan(
-		&user.ID, &user.Name, &user.Email, &user.AvatarURL, &user.Height, &user.Weight, &user.BirthDate, &user.CreatedAt,
+	err = db.QueryRow(ctx, query, req.Name, req.Email, hash, req.Condition).Scan(
+		&user.ID, &user.Name, &user.Email, &user.AvatarURL, &user.Height, &user.Weight, &user.BirthDate, &user.Condition, &user.CreatedAt,
 	)
 	if err != nil {
 		var pgErr *pgconn.PgError
@@ -80,12 +80,13 @@ func Login(c *gin.Context) {
 	db := database.GetDB()
 	var user models.User
 	var hash string
-	query := `SELECT id, name, email, password_hash, avatar_url, height, weight, birth_date, created_at FROM users WHERE email = $1`
+	var status *string
+	query := `SELECT id, name, email, password_hash, status, avatar_url, height, weight, birth_date, condition, created_at FROM users WHERE email = $1`
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
 	defer cancel()
 
 	err := db.QueryRow(ctx, query, req.Email).Scan(
-		&user.ID, &user.Name, &user.Email, &hash, &user.AvatarURL, &user.Height, &user.Weight, &user.BirthDate, &user.CreatedAt,
+		&user.ID, &user.Name, &user.Email, &hash, &status, &user.AvatarURL, &user.Height, &user.Weight, &user.BirthDate, &user.Condition, &user.CreatedAt,
 	)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
@@ -115,9 +116,9 @@ func GetMe(c *gin.Context) {
 
 	db := database.GetDB()
 	var user models.User
-	query := `SELECT id, name, email, avatar_url, height, weight, birth_date, created_at FROM users WHERE id = $1`
+	query := `SELECT id, name, email, avatar_url, height, weight, birth_date, condition, created_at FROM users WHERE id = $1`
 	err := db.QueryRow(context.Background(), query, userID).Scan(
-		&user.ID, &user.Name, &user.Email, &user.AvatarURL, &user.Height, &user.Weight, &user.BirthDate, &user.CreatedAt,
+		&user.ID, &user.Name, &user.Email, &user.AvatarURL, &user.Height, &user.Weight, &user.BirthDate, &user.Condition, &user.CreatedAt,
 	)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
@@ -325,9 +326,9 @@ func GoogleLogin(c *gin.Context) {
 	var status string
 
 	// Buscar utilizador na base de dados por email
-	querySelect := `SELECT id, name, email, status, avatar_url, height, weight, birth_date, created_at FROM users WHERE email = $1`
+	querySelect := `SELECT id, name, email, status, avatar_url, height, weight, birth_date, condition, created_at FROM users WHERE email = $1`
 	err = db.QueryRow(ctx, querySelect, email).Scan(
-		&user.ID, &user.Name, &user.Email, &status, &user.AvatarURL, &user.Height, &user.Weight, &user.BirthDate, &user.CreatedAt,
+		&user.ID, &user.Name, &user.Email, &status, &user.AvatarURL, &user.Height, &user.Weight, &user.BirthDate, &user.Condition, &user.CreatedAt,
 	)
 
 	if err == nil {
@@ -358,9 +359,9 @@ func GoogleLogin(c *gin.Context) {
 	}
 
 	// Criar novo utilizador (password_hash fica NULL)
-	queryInsert := `INSERT INTO users (name, email, password_hash) VALUES ($1, $2, NULL) RETURNING id, name, email, avatar_url, height, weight, birth_date, created_at`
+	queryInsert := `INSERT INTO users (name, email, password_hash) VALUES ($1, $2, NULL) RETURNING id, name, email, avatar_url, height, weight, birth_date, condition, created_at`
 	err = db.QueryRow(ctx, queryInsert, name, email).Scan(
-		&user.ID, &user.Name, &user.Email, &user.AvatarURL, &user.Height, &user.Weight, &user.BirthDate, &user.CreatedAt,
+		&user.ID, &user.Name, &user.Email, &user.AvatarURL, &user.Height, &user.Weight, &user.BirthDate, &user.Condition, &user.CreatedAt,
 	)
 	if err != nil {
 		log.Printf("GoogleLogin db insert error: %v", err)
@@ -469,9 +470,9 @@ func UpdateProfile(c *gin.Context) {
 	}
 
 	var user models.User
-	querySelect := `SELECT id, name, email, avatar_url, height, weight, birth_date, created_at FROM users WHERE id = $1`
+	querySelect := `SELECT id, name, email, avatar_url, height, weight, birth_date, condition, created_at FROM users WHERE id = $1`
 	err = db.QueryRow(ctx, querySelect, userID).Scan(
-		&user.ID, &user.Name, &user.Email, &user.AvatarURL, &user.Height, &user.Weight, &user.BirthDate, &user.CreatedAt,
+		&user.ID, &user.Name, &user.Email, &user.AvatarURL, &user.Height, &user.Weight, &user.BirthDate, &user.Condition, &user.CreatedAt,
 	)
 	if err != nil {
 		log.Printf("UpdateProfile select error: %v", err)

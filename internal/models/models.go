@@ -14,6 +14,7 @@ type User struct {
 	Height       *int       `json:"height,omitempty"`
 	Weight       *float64   `json:"weight,omitempty"`
 	BirthDate    *time.Time `json:"birth_date,omitempty"`
+	Condition    *string    `json:"condition,omitempty"`
 	CreatedAt    time.Time  `json:"created_at"`
 }
 
@@ -60,9 +61,10 @@ type AuthRequest struct {
 }
 
 type RegisterRequest struct {
-	Name     string `json:"name" binding:"required"`
-	Email    string `json:"email" binding:"required"`
-	Password string `json:"password" binding:"required"`
+	Name      string  `json:"name" binding:"required"`
+	Email     string  `json:"email" binding:"required"`
+	Password  string  `json:"password" binding:"required"`
+	Condition *string `json:"condition,omitempty"`
 }
 
 type AuthResponse struct {

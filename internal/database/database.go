@@ -85,6 +85,7 @@ func EnsureRatingsSchema() error {
 		`ALTER TABLE users ADD COLUMN IF NOT EXISTS height INTEGER`,
 		`ALTER TABLE users ADD COLUMN IF NOT EXISTS weight DOUBLE PRECISION`,
 		`ALTER TABLE users ADD COLUMN IF NOT EXISTS birth_date DATE`,
+		`ALTER TABLE users ADD COLUMN IF NOT EXISTS condition TEXT`,
 
 		`CREATE TABLE IF NOT EXISTS review_helpful_votes (
 			id SERIAL PRIMARY KEY,
