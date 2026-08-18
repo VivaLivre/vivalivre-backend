@@ -51,11 +51,11 @@ func CreateReview(c *gin.Context) {
 	review.Comment = req.Comment
 	review.CleanlinessRating = req.CleanlinessRating
 	review.AccessibilityRating = req.AccessibilityRating
-	review.SpaciosunessRating = req.SpaciosunessRating
+	review.SpaciousnessRating = req.SpaciousnessRating
 
 	err = db.QueryRow(ctx, query,
 		bathroomID, userID, req.Rating, req.Title, req.Comment,
-		req.CleanlinessRating, req.AccessibilityRating, req.SpaciosunessRating,
+		req.CleanlinessRating, req.AccessibilityRating, req.SpaciousnessRating,
 	).Scan(&review.ID, &review.HelpfulCount, &review.UnhelpfulCount, &review.Status, &review.CreatedAt, &review.UpdatedAt)
 
 	if err != nil {
@@ -130,7 +130,7 @@ func ListReviews(c *gin.Context) {
 		var r models.BathroomReview
 		err := rows.Scan(
 			&r.ID, &r.BathroomID, &r.UserID, &r.Rating, &r.Title, &r.Comment,
-			&r.CleanlinessRating, &r.AccessibilityRating, &r.SpaciosunessRating,
+			&r.CleanlinessRating, &r.AccessibilityRating, &r.SpaciousnessRating,
 			&r.HelpfulCount, &r.UnhelpfulCount, &r.Status, &r.CreatedAt, &r.UpdatedAt,
 			&total, &avgRating,
 		)
@@ -172,7 +172,7 @@ func GetReview(c *gin.Context) {
 	var review models.BathroomReview
 	err = db.QueryRow(ctx, query, reviewID).Scan(
 		&review.ID, &review.BathroomID, &review.UserID, &review.Rating, &review.Title, &review.Comment,
-		&review.CleanlinessRating, &review.AccessibilityRating, &review.SpaciosunessRating,
+		&review.CleanlinessRating, &review.AccessibilityRating, &review.SpaciousnessRating,
 		&review.HelpfulCount, &review.UnhelpfulCount, &review.Status, &review.CreatedAt, &review.UpdatedAt,
 	)
 
@@ -223,7 +223,7 @@ func GetRatingStats(c *gin.Context) {
 		&stats.AverageRating,
 		&stats.AvgCleanliness,
 		&stats.AvgAccessibility,
-		&stats.AvgSpaciosuneness,
+		&stats.AvgSpaciousness,
 	)
 
 	if err != nil {
@@ -313,11 +313,11 @@ func UpdateReview(c *gin.Context) {
 	var review models.BathroomReview
 	err = db.QueryRow(ctx, updateQuery,
 		req.Rating, req.Title, req.Comment,
-		req.CleanlinessRating, req.AccessibilityRating, req.SpaciosunessRating,
+		req.CleanlinessRating, req.AccessibilityRating, req.SpaciousnessRating,
 		reviewID,
 	).Scan(
 		&review.ID, &review.BathroomID, &review.UserID, &review.Rating, &review.Title, &review.Comment,
-		&review.CleanlinessRating, &review.AccessibilityRating, &review.SpaciosunessRating,
+		&review.CleanlinessRating, &review.AccessibilityRating, &review.SpaciousnessRating,
 		&review.HelpfulCount, &review.UnhelpfulCount, &review.Status, &review.CreatedAt, &review.UpdatedAt,
 	)
 

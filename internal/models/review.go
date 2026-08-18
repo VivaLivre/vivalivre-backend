@@ -12,7 +12,7 @@ type BathroomReview struct {
 	Comment             *string   `json:"comment,omitempty"`
 	CleanlinessRating   *int      `json:"cleanliness_rating,omitempty"`
 	AccessibilityRating *int      `json:"accessibility_rating,omitempty"`
-	SpaciosunessRating  *int      `json:"spaciousness_rating,omitempty"`
+	SpaciousnessRating  *int      `json:"spaciousness_rating,omitempty"`
 	HelpfulCount        int       `json:"helpful_count"`
 	UnhelpfulCount      int       `json:"unhelpful_count"`
 	Status              string    `json:"status"`
@@ -27,7 +27,7 @@ type CreateReviewRequest struct {
 	Comment             *string `json:"comment" binding:"omitempty,max=500"`
 	CleanlinessRating   *int    `json:"cleanliness_rating" binding:"omitempty,min=1,max=5"`
 	AccessibilityRating *int    `json:"accessibility_rating" binding:"omitempty,min=1,max=5"`
-	SpaciosunessRating  *int    `json:"spaciousness_rating" binding:"omitempty,min=1,max=5"`
+	SpaciousnessRating  *int    `json:"spaciousness_rating" binding:"omitempty,min=1,max=5"`
 }
 
 // UpdateReviewRequest é o payload para atualizar uma avaliação
@@ -37,7 +37,7 @@ type UpdateReviewRequest struct {
 	Comment             *string `json:"comment" binding:"omitempty,max=500"`
 	CleanlinessRating   *int    `json:"cleanliness_rating" binding:"omitempty,min=1,max=5"`
 	AccessibilityRating *int    `json:"accessibility_rating" binding:"omitempty,min=1,max=5"`
-	SpaciosunessRating  *int    `json:"spaciousness_rating" binding:"omitempty,min=1,max=5"`
+	SpaciousnessRating  *int    `json:"spaciousness_rating" binding:"omitempty,min=1,max=5"`
 }
 
 // BathroomRatingStats representa estatísticas de ratings
@@ -47,7 +47,7 @@ type BathroomRatingStats struct {
 	AverageRating      float64     `json:"average_rating"`
 	AvgCleanliness     float64     `json:"avg_cleanliness"`
 	AvgAccessibility   float64     `json:"avg_accessibility"`
-	AvgSpaciosuneness  float64     `json:"avg_spaciousness"`
+	AvgSpaciousness  float64     `json:"avg_spaciousness"`
 	RatingDistribution map[int]int `json:"rating_distribution"`
 }
 
