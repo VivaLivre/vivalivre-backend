@@ -25,8 +25,10 @@ func main() {
 	}
 	defer database.CloseDB()
 
-	// Setup Router
-	r := gin.Default()
+	// Setup Router with explicit middlewares for production control
+	r := gin.New()
+	r.Use(gin.Recovery()) // Recover from panics
+	r.Use(gin.Logger())   // Request logging
 
 	// CORS Middleware (Basic)
 	r.Use(func(c *gin.Context) {
