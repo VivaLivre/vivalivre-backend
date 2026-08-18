@@ -40,7 +40,7 @@ func Register(c *gin.Context) {
 	db := database.GetDB()
 	var user models.User
 	query := `INSERT INTO users (name, email, password_hash, cpf, date_of_birth, gender, weight, height, clinical_condition, comorbidities) 
-	          VALUES ($1, $2, $3, $4, NULLIF($5, ''), $6, $7, $8, $9, $10) 
+	          VALUES ($1, $2, $3, $4, NULLIF($5, '')::DATE, $6, $7, $8, $9, $10) 
 	          RETURNING id, name, email, avatar_url, height, weight, date_of_birth::text, clinical_condition, comorbidities, created_at`
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
 	defer cancel()
