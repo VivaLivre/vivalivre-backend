@@ -86,6 +86,11 @@ func EnsureRatingsSchema() error {
 		`ALTER TABLE users ADD COLUMN IF NOT EXISTS weight DOUBLE PRECISION`,
 		`ALTER TABLE users ADD COLUMN IF NOT EXISTS birth_date DATE`,
 		`ALTER TABLE users ADD COLUMN IF NOT EXISTS condition TEXT`,
+		`ALTER TABLE users ADD COLUMN IF NOT EXISTS cpf VARCHAR(14)`,
+		`ALTER TABLE users ADD COLUMN IF NOT EXISTS date_of_birth DATE`,
+		`ALTER TABLE users ADD COLUMN IF NOT EXISTS gender VARCHAR(50)`,
+		`ALTER TABLE users ADD COLUMN IF NOT EXISTS clinical_condition TEXT`,
+		`ALTER TABLE users ADD COLUMN IF NOT EXISTS comorbidities JSONB DEFAULT '[]'::jsonb`,
 
 		`CREATE TABLE IF NOT EXISTS review_helpful_votes (
 			id SERIAL PRIMARY KEY,

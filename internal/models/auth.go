@@ -10,10 +10,16 @@ type AuthRequest struct {
 
 // RegisterRequest is the payload for registration
 type RegisterRequest struct {
-	Name      string  `json:"name" binding:"required"`
-	Email     string  `json:"email" binding:"required"`
-	Password  string  `json:"password" binding:"required"`
-	Condition *string `json:"condition,omitempty"`
+	Name              string   `json:"name" binding:"required"`
+	Email             string   `json:"email" binding:"required"`
+	Password          string   `json:"password" binding:"required"`
+	CPF               string   `json:"cpf"`
+	DateOfBirth       string   `json:"date_of_birth"`
+	Gender            string   `json:"gender"`
+	Weight            *float64 `json:"weight"`
+	Height            *float64 `json:"height"`
+	ClinicalCondition string   `json:"clinical_condition"`
+	Comorbidities     []string `json:"comorbidities"`
 }
 
 // AuthResponse is the response after successful authentication
