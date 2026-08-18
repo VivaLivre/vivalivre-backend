@@ -222,7 +222,7 @@ func GetHealthEntries(c *gin.Context) {
 
 	query := `SELECT id, user_id, type, severity, description, COALESCE(symptoms, '{}'), entry_date FROM health_entries WHERE user_id = $1`
 	if dateFilter == "today" {
-		query += ` AND DATE(entry_date) = CURRENT_DATE`
+		query += ` AND entry_date >= CURRENT_DATE AND entry_date < CURRENT_DATE + INTERVAL '1 day'`
 	}
 	query += ` ORDER BY entry_date DESC`
 
