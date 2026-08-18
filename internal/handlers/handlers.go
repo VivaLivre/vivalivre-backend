@@ -122,7 +122,9 @@ func GetMe(c *gin.Context) {
 	db := database.GetDB()
 	var user models.User
 	query := `SELECT id, name, email, avatar_url, height, weight, birth_date, condition, created_at FROM users WHERE id = $1`
-	err := db.QueryRow(context.Background(), query, userID).Scan(
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+	defer cancel()
+	err := db.QueryRow(ctx, query, userID).Scan(
 		&user.ID, &user.Name, &user.Email, &user.AvatarURL, &user.Height, &user.Weight, &user.BirthDate, &user.Condition, &user.CreatedAt,
 	)
 	if err != nil {
