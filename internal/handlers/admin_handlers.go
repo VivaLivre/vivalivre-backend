@@ -194,6 +194,17 @@ func UpdateBathroomStatus(c *gin.Context) {
 		return
 	}
 
+	// Delete orphaned photo if rejected
+	if requestBody.Status == "rejected" {
+		go func() {
+			var photoURL *string
+			err := database.GetDB().QueryRow(context.Background(), "SELECT photo_url FROM bathrooms WHERE id = $1", bathroomID).Scan(&photoURL)
+			if err == nil && photoURL != nil {
+				deletePhotoByURL(*photoURL, bathroomID)
+			}
+		}()
+	}
+
 	c.JSON(http.StatusOK, gin.H{"message": "Status updated successfully"})
 }
 
@@ -759,21 +770,40 @@ func DeleteAdminBathroom(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
 	defer cancel()
 
-	query := "DELETE FROM bathrooms WHERE id = $1"
-	tag, err := db.Exec(ctx, query, bathroomID)
-
+	query := "DELETE FROM bathrooms WHERE id = $1 RETURNING photo_url"
+	var photoURL *string
+	err := db.QueryRow(ctx, query, bathroomID).Scan(&photoURL)
 	if err != nil {
+		if err.Error() == "no rows in result set" {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Bathroom not found"})
+			return
+		}
 		log.Printf("DeleteAdminBathroom: failed to delete: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete bathroom"})
 		return
 	}
 
-	if tag.RowsAffected() == 0 {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Bathroom not found"})
-		return
+	if photoURL != nil {
+		go deletePhotoByURL(*photoURL, bathroomID)
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Bathroom deleted successfully"})
+}
+
+func deletePhotoByURL(photoURL string, bathroomID string) {
+	if photoURL == "" {
+		return
+	}
+	parts := strings.Split(photoURL, "/")
+	objectName := parts[len(parts)-1]
+	if objectName != "" {
+		err := storage.DeleteFromSupabase("bathroom_photos", objectName)
+		if err != nil {
+			log.Printf("Failed to delete orphaned photo %s for bathroom %s: %v", objectName, bathroomID, err)
+		} else {
+			log.Printf("Deleted orphaned photo %s for bathroom %s", objectName, bathroomID)
+		}
+	}
 }
 
 // UpdateSuggestionStatus updates the status of a specific suggestion
