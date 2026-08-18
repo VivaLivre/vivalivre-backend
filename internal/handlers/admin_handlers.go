@@ -199,19 +199,32 @@ func UpdateBathroomStatus(c *gin.Context) {
 
 // GetAllReports fetches all reports with bathroom and user info
 func GetAllReports(c *gin.Context) {
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
+	
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 {
+		limit = 20
+	}
+	offset := (page - 1) * limit
+
 	db := database.GetDB()
 	query := `
-		SELECT r.id, r.bathroom_id, b.name as bathroom_name, r.user_id, u.email as user_email, r.reason, r.description, r.status, r.created_at
+		SELECT r.id, r.bathroom_id, b.name as bathroom_name, r.user_id, u.email as user_email, r.reason, r.description, r.status, r.created_at,
+		       COUNT(*) OVER() as total_count
 		FROM bathroom_reports r
 		JOIN bathrooms b ON r.bathroom_id = b.id
 		JOIN users u ON r.user_id = u.id
 		ORDER BY r.created_at DESC
+		LIMIT $1 OFFSET $2
 	`
 
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
 	defer cancel()
 
-	rows, err := db.Query(ctx, query)
+	rows, err := db.Query(ctx, query, limit, offset)
 	if err != nil {
 		log.Printf("GetAllReports: failed to query: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch reports"})
@@ -220,9 +233,10 @@ func GetAllReports(c *gin.Context) {
 	defer rows.Close()
 
 	var reports []models.BathroomReport
+	var total int
 	for rows.Next() {
 		var r models.BathroomReport
-		if err := rows.Scan(&r.ID, &r.BathroomID, &r.BathroomName, &r.UserID, &r.UserEmail, &r.Reason, &r.Description, &r.Status, &r.CreatedAt); err != nil {
+		if err := rows.Scan(&r.ID, &r.BathroomID, &r.BathroomName, &r.UserID, &r.UserEmail, &r.Reason, &r.Description, &r.Status, &r.CreatedAt, &total); err != nil {
 			log.Printf("GetAllReports: scan error: %v", err)
 			continue
 		}
@@ -233,7 +247,12 @@ func GetAllReports(c *gin.Context) {
 		reports = []models.BathroomReport{}
 	}
 
-	c.JSON(http.StatusOK, reports)
+	c.JSON(http.StatusOK, gin.H{
+		"data":  reports,
+		"total": total,
+		"page":  page,
+		"limit": limit,
+	})
 }
 
 // UpdateReportStatus updates the status of a specific report
@@ -269,19 +288,32 @@ func UpdateReportStatus(c *gin.Context) {
 
 // GetAllSuggestions fetches all suggestions with bathroom and user info
 func GetAllSuggestions(c *gin.Context) {
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
+	
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 {
+		limit = 20
+	}
+	offset := (page - 1) * limit
+
 	db := database.GetDB()
 	query := `
-		SELECT s.id, s.bathroom_id, b.name as bathroom_name, s.user_id, u.email as user_email, s.suggested_updates, s.status, s.created_at
+		SELECT s.id, s.bathroom_id, b.name as bathroom_name, s.user_id, u.email as user_email, s.suggested_updates, s.status, s.created_at,
+		       COUNT(*) OVER() as total_count
 		FROM bathroom_suggestions s
 		JOIN bathrooms b ON s.bathroom_id = b.id
 		JOIN users u ON s.user_id = u.id
 		ORDER BY s.created_at DESC
+		LIMIT $1 OFFSET $2
 	`
 
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
 	defer cancel()
 
-	rows, err := db.Query(ctx, query)
+	rows, err := db.Query(ctx, query, limit, offset)
 	if err != nil {
 		log.Printf("GetAllSuggestions: failed to query: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch suggestions"})
@@ -290,9 +322,10 @@ func GetAllSuggestions(c *gin.Context) {
 	defer rows.Close()
 
 	var suggestions []models.BathroomSuggestion
+	var total int
 	for rows.Next() {
 		var s models.BathroomSuggestion
-		if err := rows.Scan(&s.ID, &s.BathroomID, &s.BathroomName, &s.UserID, &s.UserEmail, &s.SuggestedUpdates, &s.Status, &s.CreatedAt); err != nil {
+		if err := rows.Scan(&s.ID, &s.BathroomID, &s.BathroomName, &s.UserID, &s.UserEmail, &s.SuggestedUpdates, &s.Status, &s.CreatedAt, &total); err != nil {
 			log.Printf("GetAllSuggestions: scan error: %v", err)
 			continue
 		}
@@ -303,7 +336,12 @@ func GetAllSuggestions(c *gin.Context) {
 		suggestions = []models.BathroomSuggestion{}
 	}
 
-	c.JSON(http.StatusOK, suggestions)
+	c.JSON(http.StatusOK, gin.H{
+		"data":  suggestions,
+		"total": total,
+		"page":  page,
+		"limit": limit,
+	})
 }
 
 // GetAdminBathrooms list bathrooms with pagination and search
