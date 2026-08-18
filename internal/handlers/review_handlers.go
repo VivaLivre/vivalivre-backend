@@ -101,11 +101,13 @@ func ListReviews(c *gin.Context) {
 		orderBy = "r.rating DESC, r.created_at DESC"
 	}
 
-	// Buscar reviews
+	// Buscar reviews com contagem e média usando Window Functions
 	query := `
 		SELECT r.id, r.bathroom_id, r.user_id, r.rating, r.title, r.comment,
 		       r.cleanliness_rating, r.accessibility_rating, r.spaciousness_rating,
-		       r.helpful_count, r.unhelpful_count, r.status, r.created_at, r.updated_at
+		       r.helpful_count, r.unhelpful_count, r.status, r.created_at, r.updated_at,
+		       COUNT(*) OVER() as total_count,
+		       AVG(r.rating) OVER() as avg_rating
 		FROM bathroom_reviews r
 		WHERE r.bathroom_id = $1 AND (r.status = 'approved' OR r.status IS NULL)
 		ORDER BY ` + orderBy + `
@@ -121,28 +123,22 @@ func ListReviews(c *gin.Context) {
 	defer rows.Close()
 
 	reviews := []models.BathroomReview{}
+	var total int
+	var avgRating float64
+
 	for rows.Next() {
 		var r models.BathroomReview
 		err := rows.Scan(
 			&r.ID, &r.BathroomID, &r.UserID, &r.Rating, &r.Title, &r.Comment,
 			&r.CleanlinessRating, &r.AccessibilityRating, &r.SpaciosunessRating,
 			&r.HelpfulCount, &r.UnhelpfulCount, &r.Status, &r.CreatedAt, &r.UpdatedAt,
+			&total, &avgRating,
 		)
 		if err != nil {
 			continue
 		}
 		reviews = append(reviews, r)
 	}
-
-	// Contar total
-	var total int
-	countQuery := `SELECT COUNT(*) FROM bathroom_reviews WHERE bathroom_id = $1 AND (status = 'approved' OR status IS NULL)`
-	db.QueryRow(ctx, countQuery, bathroomID).Scan(&total)
-
-	// Calcular média
-	var avgRating float64
-	avgQuery := `SELECT COALESCE(AVG(rating), 0) FROM bathroom_reviews WHERE bathroom_id = $1 AND (status = 'approved' OR status IS NULL)`
-	db.QueryRow(ctx, avgQuery, bathroomID).Scan(&avgRating)
 
 	c.JSON(http.StatusOK, gin.H{
 		"reviews":        reviews,
