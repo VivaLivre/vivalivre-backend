@@ -499,7 +499,7 @@ func UpdateProfile(c *gin.Context) {
 	}
 
 	var user models.User
-	querySelect := `SELECT id, name, email, avatar_url, height, weight, birth_date, condition, created_at FROM users WHERE id = $1`
+	querySelect := `SELECT id, name, email, avatar_url, height, weight, date_of_birth, condition, created_at FROM users WHERE id = $1`
 	err = db.QueryRow(ctx, querySelect, userID).Scan(
 		&user.ID, &user.Name, &user.Email, &user.AvatarURL, &user.Height, &user.Weight, &user.BirthDate, &user.Condition, &user.CreatedAt,
 	)
