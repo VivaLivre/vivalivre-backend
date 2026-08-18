@@ -97,7 +97,7 @@ func Login(c *gin.Context) {
 	var user models.User
 	var hash string
 	var status *string
-	query := `SELECT id, name, email, password_hash, status, avatar_url, height, weight, birth_date, condition, created_at FROM users WHERE email = $1`
+	query := `SELECT id, name, email, password_hash, status, avatar_url, height, weight, date_of_birth, condition, created_at FROM users WHERE email = $1`
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
 	defer cancel()
 
@@ -137,7 +137,7 @@ func GetMe(c *gin.Context) {
 
 	db := database.GetDB()
 	var user models.User
-	query := `SELECT id, name, email, avatar_url, height, weight, birth_date, condition, created_at FROM users WHERE id = $1`
+	query := `SELECT id, name, email, avatar_url, height, weight, date_of_birth, condition, created_at FROM users WHERE id = $1`
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
 	defer cancel()
 	err := db.QueryRow(ctx, query, userID).Scan(
