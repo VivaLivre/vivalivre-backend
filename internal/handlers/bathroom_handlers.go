@@ -157,9 +157,7 @@ func RequestBathroom(c *gin.Context) {
 
 // parseBool converts common boolean string representations to bool.
 func parseBool(s string) bool {
-	s = strconv.FormatBool(s == "true" || s == "1" || s == "yes")
-	result, _ := strconv.ParseBool(s)
-	return result
+	return s == "true" || s == "1" || s == "yes"
 }
 
 // isAllowedImageType checks if the MIME type is an accepted image format.
