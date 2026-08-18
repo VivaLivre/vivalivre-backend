@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"log"
 	"net/http"
@@ -31,15 +32,30 @@ func Register(c *gin.Context) {
 		return
 	}
 
+	comorbiditiesJSON, err := json.Marshal(req.Comorbidities)
+	if err != nil || len(req.Comorbidities) == 0 {
+		comorbiditiesJSON = []byte("[]")
+	}
+
 	db := database.GetDB()
 	var user models.User
-	query := `INSERT INTO users (name, email, password_hash, condition) VALUES ($1, $2, $3, $4) RETURNING id, name, email, avatar_url, height, weight, birth_date, condition, created_at`
+	query := `INSERT INTO users (name, email, password_hash, cpf, date_of_birth, gender, weight, height, clinical_condition, comorbidities) 
+	          VALUES ($1, $2, $3, $4, NULLIF($5, ''), $6, $7, $8, $9, $10) 
+	          RETURNING id, name, email, avatar_url, height, weight, date_of_birth::text, clinical_condition, comorbidities, created_at`
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
 	defer cancel()
 
-	err = db.QueryRow(ctx, query, req.Name, req.Email, hash, req.Condition).Scan(
-		&user.ID, &user.Name, &user.Email, &user.AvatarURL, &user.Height, &user.Weight, &user.BirthDate, &user.Condition, &user.CreatedAt,
+	var comorbsBytes []byte
+	err = db.QueryRow(ctx, query,
+		req.Name, req.Email, hash, req.CPF, req.DateOfBirth, req.Gender, req.Weight, req.Height, req.ClinicalCondition, string(comorbiditiesJSON),
+	).Scan(
+		&user.ID, &user.Name, &user.Email, &user.AvatarURL, &user.Height, &user.Weight, &user.DateOfBirth, &user.ClinicalCondition, &comorbsBytes, &user.CreatedAt,
 	)
+
+	if err == nil {
+		_ = json.Unmarshal(comorbsBytes, &user.Comorbidities)
+	}
+
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
