@@ -221,13 +221,19 @@ func GetHealthEntries(c *gin.Context) {
 	dateFilter := c.Query("date")
 
 	query := `SELECT id, user_id, type, severity, description, COALESCE(symptoms, '{}'), entry_date FROM health_entries WHERE user_id = $1`
+	var args []interface{}
+	args = append(args, userID)
+
 	if dateFilter == "today" {
 		query += ` AND entry_date >= CURRENT_DATE AND entry_date < CURRENT_DATE + INTERVAL '1 day'`
+	} else if dateFilter != "" {
+		query += ` AND entry_date >= $2::date AND entry_date < $2::date + INTERVAL '1 day'`
+		args = append(args, dateFilter)
 	}
 	query += ` ORDER BY entry_date DESC`
 
 	db := database.GetDB()
-	rows, err := db.Query(context.Background(), query, userID)
+	rows, err := db.Query(context.Background(), query, args...)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch health entries"})
 		return
