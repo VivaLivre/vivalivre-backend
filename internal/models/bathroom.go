@@ -21,6 +21,8 @@ type Bathroom struct {
 	Status              string          `json:"status"`
 	CleanlinessRating   float64         `json:"cleanliness_rating"`
 	AccessibilityRating float64         `json:"accessibility_rating"`
+	AverageRating       float64         `json:"average_rating"`
+	ReviewsCount        int             `json:"reviews_count"`
 	PhotoURL            string          `json:"photo_url,omitempty"`
 	Distance            float64         `json:"distance,omitempty"`
 	CreatedAt           time.Time       `json:"created_at"`

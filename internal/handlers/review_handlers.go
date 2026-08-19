@@ -107,8 +107,10 @@ func ListReviews(c *gin.Context) {
 		       r.cleanliness_rating, r.accessibility_rating, r.spaciousness_rating,
 		       r.helpful_count, r.unhelpful_count, r.status, r.created_at, r.updated_at,
 		       COUNT(*) OVER() as total_count,
-		       AVG(r.rating) OVER() as avg_rating
+		       AVG(r.rating) OVER() as avg_rating,
+		       u.name as user_name, u.avatar_url as user_avatar
 		FROM bathroom_reviews r
+		LEFT JOIN users u ON r.user_id = u.id
 		WHERE r.bathroom_id = $1 AND (r.status = 'approved' OR r.status IS NULL)
 		ORDER BY ` + orderBy + `
 		LIMIT $2 OFFSET $3
@@ -132,9 +134,10 @@ func ListReviews(c *gin.Context) {
 			&r.ID, &r.BathroomID, &r.UserID, &r.Rating, &r.Title, &r.Comment,
 			&r.CleanlinessRating, &r.AccessibilityRating, &r.SpaciousnessRating,
 			&r.HelpfulCount, &r.UnhelpfulCount, &r.Status, &r.CreatedAt, &r.UpdatedAt,
-			&total, &avgRating,
+			&total, &avgRating, &r.UserName, &r.UserAvatar,
 		)
 		if err != nil {
+			log.Printf("ListReviews scan error: %v", err)
 			continue
 		}
 		reviews = append(reviews, r)

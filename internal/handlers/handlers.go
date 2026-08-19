@@ -182,11 +182,19 @@ func GetNearbyBathrooms(c *gin.Context) {
 
 	db := database.GetDB()
 	query := `
-		SELECT id, name, address, ST_Y(location::geometry) as latitude, ST_X(location::geometry) as longitude, is_accessible, has_changing_table, is_free, photo_url, status, operating_hours, observations, created_at,
-		ST_Distance(location, ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography) as distance
-		FROM bathrooms
-		WHERE ST_DWithin(location, ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography, $3)
-		AND status = 'approved'
+		SELECT 
+			b.id, b.name, b.address, ST_Y(b.location::geometry) as latitude, ST_X(b.location::geometry) as longitude, 
+			b.is_accessible, b.has_changing_table, b.is_free, b.photo_url, b.status, b.operating_hours, b.observations, b.created_at,
+			ST_Distance(b.location, ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography) as distance,
+			COALESCE(AVG(r.rating), 0)::float as average_rating,
+			COUNT(r.id)::int as reviews_count,
+			COALESCE(AVG(r.cleanliness_rating), 0)::float as cleanliness_rating,
+			COALESCE(AVG(r.accessibility_rating), 0)::float as accessibility_rating
+		FROM bathrooms b
+		LEFT JOIN bathroom_reviews r ON b.id = r.bathroom_id AND r.status = 'approved'
+		WHERE ST_DWithin(b.location, ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography, $3)
+		AND b.status = 'approved'
+		GROUP BY b.id
 		ORDER BY distance
 		LIMIT 50;
 	`
@@ -212,6 +220,7 @@ func GetNearbyBathrooms(c *gin.Context) {
 			&b.ID, &b.Name, &b.Address, &b.Latitude, &b.Longitude, 
 			&b.IsAccessible, &b.HasChangingTable, &b.IsFree, 
 			&photoURL, &b.Status, &operatingHours, &observations, &b.CreatedAt, &b.Distance,
+			&b.AverageRating, &b.ReviewsCount, &b.CleanlinessRating, &b.AccessibilityRating,
 		); err != nil {
 			log.Printf("GetNearbyBathrooms Scan error: %v", err)
 			continue
