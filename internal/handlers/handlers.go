@@ -352,7 +352,7 @@ func GoogleLogin(c *gin.Context) {
 
 	db := database.GetDB()
 	var user models.User
-	var status string
+	var status *string
 
 	// Buscar utilizador na base de dados por email
 	querySelect := `SELECT id, name, email, status, avatar_url, height, weight, birth_date, condition, created_at FROM users WHERE email = $1`
@@ -362,7 +362,7 @@ func GoogleLogin(c *gin.Context) {
 
 	if err == nil {
 		// O utilizador existe
-		if status == "banned" || status == "suspended" {
+		if status != nil && (*status == "banned" || *status == "suspended") {
 			c.JSON(http.StatusForbidden, gin.H{"error": "O utilizador está banido ou suspenso."})
 			return
 		}
