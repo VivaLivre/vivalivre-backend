@@ -301,6 +301,41 @@ func CreateHealthEntry(c *gin.Context) {
 	c.JSON(http.StatusCreated, entry)
 }
 
+// UpdateHealthEntry handles updating an existing health entry
+func UpdateHealthEntry(c *gin.Context) {
+	userID := c.MustGet("userID").(int)
+	entryID := c.Param("id")
+
+	var req models.UpdateHealthEntryRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if req.Symptoms == nil {
+		req.Symptoms = []string{}
+	}
+
+	db := database.GetDB()
+	query := `
+		UPDATE health_entries 
+		SET type = $1, severity = $2, description = $3, symptoms = $4
+		WHERE id = $5 AND user_id = $6
+		RETURNING id, user_id, type, severity, description, COALESCE(symptoms, '{}'), entry_date
+	`
+	var entry models.HealthEntry
+	err := db.QueryRow(context.Background(), query, req.Type, req.Severity, req.Description, req.Symptoms, entryID, userID).
+		Scan(&entry.ID, &entry.UserID, &entry.Type, &entry.Severity, &entry.Description, &entry.Symptoms, &entry.EntryDate)
+	
+	if err != nil {
+		log.Printf("UpdateHealthEntry ERROR: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update health entry"})
+		return
+	}
+
+	c.JSON(http.StatusOK, entry)
+}
+
 // DeleteHealthEntry deletes a specific health entry
 func DeleteHealthEntry(c *gin.Context) {
 	userID := c.MustGet("userID").(int)
