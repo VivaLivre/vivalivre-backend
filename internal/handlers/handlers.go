@@ -488,6 +488,16 @@ func UpdateProfile(c *gin.Context) {
 		}
 	}
 
+	var birthDate *time.Time
+	if bStr := c.PostForm("birth_date"); bStr != "" {
+		if b, err := time.Parse("2006-01-02", bStr); err == nil {
+			birthDate = &b
+		} else {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Data de nascimento inválida. Formato esperado: YYYY-MM-DD."})
+			return
+		}
+	}
+
 	db := database.GetDB()
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
 	defer cancel()
@@ -529,11 +539,11 @@ func UpdateProfile(c *gin.Context) {
 	var query string
 	var errUpdate error
 	if avatarURL != nil {
-		query = `UPDATE users SET email = $1, height = $2, weight = $3, avatar_url = $4 WHERE id = $5`
-		_, errUpdate = db.Exec(ctx, query, email, height, weight, *avatarURL, userID)
+		query = `UPDATE users SET email = $1, height = $2, weight = $3, date_of_birth = $4, avatar_url = $5 WHERE id = $6`
+		_, errUpdate = db.Exec(ctx, query, email, height, weight, birthDate, *avatarURL, userID)
 	} else {
-		query = `UPDATE users SET email = $1, height = $2, weight = $3 WHERE id = $4`
-		_, errUpdate = db.Exec(ctx, query, email, height, weight, userID)
+		query = `UPDATE users SET email = $1, height = $2, weight = $3, date_of_birth = $4 WHERE id = $5`
+		_, errUpdate = db.Exec(ctx, query, email, height, weight, birthDate, userID)
 	}
 
 	if errUpdate != nil {
