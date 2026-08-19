@@ -12,7 +12,6 @@ type User struct {
 	Height            *float64   `json:"height,omitempty"`
 	Weight            *float64   `json:"weight,omitempty"`
 	BirthDate         *time.Time `json:"birth_date,omitempty"`
-	Condition         *string    `json:"condition,omitempty"`
 	DateOfBirth       *string    `json:"date_of_birth,omitempty"`
 	CPF               *string    `json:"cpf,omitempty"`
 	Gender            *string    `json:"gender,omitempty"`
