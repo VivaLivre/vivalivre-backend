@@ -498,6 +498,23 @@ func UpdateProfile(c *gin.Context) {
 		}
 	}
 
+	var gender *string
+	if g := c.PostForm("gender"); g != "" {
+		gender = &g
+	}
+
+	var cpf *string
+	if cp := c.PostForm("cpf"); cp != "" {
+		cpf = &cp
+	}
+
+	var clinicalCondition *string
+	if cc := c.PostForm("clinical_condition"); cc != "" {
+		clinicalCondition = &cc
+	}
+
+	comorbidities := c.PostFormArray("comorbidities")
+
 	db := database.GetDB()
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
 	defer cancel()
@@ -539,11 +556,11 @@ func UpdateProfile(c *gin.Context) {
 	var query string
 	var errUpdate error
 	if avatarURL != nil {
-		query = `UPDATE users SET email = $1, height = $2, weight = $3, date_of_birth = $4, avatar_url = $5 WHERE id = $6`
-		_, errUpdate = db.Exec(ctx, query, email, height, weight, birthDate, *avatarURL, userID)
+		query = `UPDATE users SET email = $1, height = $2, weight = $3, date_of_birth = $4, gender = $5, cpf = $6, clinical_condition = $7, comorbidities = $8, avatar_url = $9 WHERE id = $10`
+		_, errUpdate = db.Exec(ctx, query, email, height, weight, birthDate, gender, cpf, clinicalCondition, comorbidities, *avatarURL, userID)
 	} else {
-		query = `UPDATE users SET email = $1, height = $2, weight = $3, date_of_birth = $4 WHERE id = $5`
-		_, errUpdate = db.Exec(ctx, query, email, height, weight, birthDate, userID)
+		query = `UPDATE users SET email = $1, height = $2, weight = $3, date_of_birth = $4, gender = $5, cpf = $6, clinical_condition = $7, comorbidities = $8 WHERE id = $9`
+		_, errUpdate = db.Exec(ctx, query, email, height, weight, birthDate, gender, cpf, clinicalCondition, comorbidities, userID)
 	}
 
 	if errUpdate != nil {
@@ -553,9 +570,9 @@ func UpdateProfile(c *gin.Context) {
 	}
 
 	var user models.User
-	querySelect := `SELECT id, name, email, avatar_url, height, weight, date_of_birth, clinical_condition, created_at FROM users WHERE id = $1`
+	querySelect := `SELECT id, name, email, avatar_url, height, weight, date_of_birth, cpf, gender, clinical_condition, comorbidities, created_at FROM users WHERE id = $1`
 	err = db.QueryRow(ctx, querySelect, userID).Scan(
-		&user.ID, &user.Name, &user.Email, &user.AvatarURL, &user.Height, &user.Weight, &user.BirthDate, &user.ClinicalCondition, &user.CreatedAt,
+		&user.ID, &user.Name, &user.Email, &user.AvatarURL, &user.Height, &user.Weight, &user.BirthDate, &user.CPF, &user.Gender, &user.ClinicalCondition, &user.Comorbidities, &user.CreatedAt,
 	)
 	if err != nil {
 		log.Printf("UpdateProfile select error: %v", err)
