@@ -18,6 +18,8 @@ type BathroomReview struct {
 	Status              string    `json:"status"`
 	CreatedAt           time.Time `json:"created_at"`
 	UpdatedAt           time.Time `json:"updated_at"`
+	UserName            string    `json:"user_name,omitempty"`
+	UserAvatar          *string   `json:"user_avatar,omitempty"`
 }
 
 // CreateReviewRequest é o payload para criar uma avaliação
