@@ -112,6 +112,7 @@ func main() {
 		api.POST("/bathrooms/request", handlers.RequestBathroom)
 		api.GET("/health/entries", handlers.GetHealthEntries)
 		api.POST("/health/entries", handlers.CreateHealthEntry)
+		api.PATCH("/health/entries/:id", handlers.UpdateHealthEntry)
 		api.DELETE("/health/entries/:id", handlers.DeleteHealthEntry)
 
 		// Ratings routes

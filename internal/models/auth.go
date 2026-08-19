@@ -51,3 +51,11 @@ type CreateHealthEntryRequest struct {
 	Description string   `json:"description"`
 	Symptoms    []string `json:"symptoms"`
 }
+
+// UpdateHealthEntryRequest is the payload for updating a health entry
+type UpdateHealthEntryRequest struct {
+	Type        string   `json:"type" binding:"required"`
+	Severity    string   `json:"severity"`
+	Description string   `json:"description"`
+	Symptoms    []string `json:"symptoms"`
+}
