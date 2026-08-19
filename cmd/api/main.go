@@ -8,6 +8,9 @@ import (
 	"github.com/gabrieljose2004/vivalivre-backend/internal/auth"
 	"github.com/gabrieljose2004/vivalivre-backend/internal/database"
 	"github.com/gabrieljose2004/vivalivre-backend/internal/handlers"
+	adminHandlers "github.com/gabrieljose2004/vivalivre-backend/internal/handlers/admin"
+	"github.com/gabrieljose2004/vivalivre-backend/internal/repositories"
+	"github.com/gabrieljose2004/vivalivre-backend/internal/services"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 )
@@ -19,11 +22,28 @@ func main() {
 	}
 
 	// Initialize Database
-	database.GetDB()
+	db := database.GetDB()
 	if err := database.EnsureRatingsSchema(); err != nil {
 		log.Fatalf("Failed to ensure ratings schema: %v", err)
 	}
 	defer database.CloseDB()
+
+	// Setup Dependencies
+	adminRepo := repositories.NewAdminRepository(db)
+	adminService := services.NewAdminService(adminRepo)
+	adminHandler := adminHandlers.NewAdminHandler(adminService)
+
+	adminBathroomRepo := repositories.NewAdminBathroomRepository(db)
+	adminBathroomService := services.NewAdminBathroomService(adminBathroomRepo)
+	adminBathroomHandler := adminHandlers.NewAdminBathroomHandler(adminBathroomService)
+
+	adminCrowdsourceRepo := repositories.NewAdminCrowdsourceRepository(db)
+	adminCrowdsourceService := services.NewAdminCrowdsourceService(adminCrowdsourceRepo)
+	adminCrowdsourceHandler := adminHandlers.NewAdminCrowdsourceHandler(adminCrowdsourceService)
+
+	adminUserRepo := repositories.NewAdminUserRepository(db)
+	adminUserService := services.NewAdminUserService(adminUserRepo)
+	adminUserHandler := adminHandlers.NewAdminUserHandler(adminUserService)
 
 	// Setup Router with explicit middlewares for production control
 	r := gin.New()
@@ -61,25 +81,25 @@ func main() {
 	admin := r.Group("/api/admin")
 	admin.Use(auth.AuthMiddleware(), auth.RequireAdmin())
 	{
-		admin.GET("/dashboard/overview", handlers.GetDashboardOverview)
-		admin.GET("/bathrooms/pending", handlers.GetPendingBathrooms)
-		admin.PATCH("/bathrooms/:id/status", handlers.UpdateBathroomStatus)
+		admin.GET("/dashboard/overview", adminHandler.GetDashboardOverview)
+		admin.GET("/bathrooms/pending", adminHandler.GetPendingBathrooms)
+		admin.PATCH("/bathrooms/:id/status", adminHandler.UpdateBathroomStatus)
 
 		// Full CRUD for Bathrooms
-		admin.GET("/bathrooms", handlers.GetAdminBathrooms)
-		admin.POST("/bathrooms", handlers.CreateAdminBathroom)
-		admin.PATCH("/bathrooms/:id", handlers.UpdateAdminBathroom)
-		admin.DELETE("/bathrooms/:id", handlers.DeleteAdminBathroom)
+		admin.GET("/bathrooms", adminBathroomHandler.GetAdminBathrooms)
+		admin.POST("/bathrooms", adminBathroomHandler.CreateAdminBathroom)
+		admin.PATCH("/bathrooms/:id", adminBathroomHandler.UpdateAdminBathroom)
+		admin.DELETE("/bathrooms/:id", adminBathroomHandler.DeleteAdminBathroom)
 
 		// Crowdsource Admin Routes
-		admin.GET("/reports", handlers.GetAllReports)
-		admin.PATCH("/reports/:id/status", handlers.UpdateReportStatus)
-		admin.GET("/suggestions", handlers.GetAllSuggestions)
-		admin.PATCH("/suggestions/:id/status", handlers.UpdateSuggestionStatus)
+		admin.GET("/reports", adminCrowdsourceHandler.GetAllReports)
+		admin.PATCH("/reports/:id/status", adminCrowdsourceHandler.UpdateReportStatus)
+		admin.GET("/suggestions", adminCrowdsourceHandler.GetAllSuggestions)
+		admin.PATCH("/suggestions/:id/status", adminCrowdsourceHandler.UpdateSuggestionStatus)
 
 		// Users Admin Routes
-		admin.GET("/users", handlers.GetAdminUsers)
-		admin.PATCH("/users/:id/status", handlers.UpdateAdminUserStatus)
+		admin.GET("/users", adminUserHandler.GetAdminUsers)
+		admin.PATCH("/users/:id/status", adminUserHandler.UpdateAdminUserStatus)
 	}
 
 	// Protected Routes
