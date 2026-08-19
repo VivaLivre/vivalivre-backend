@@ -514,6 +514,11 @@ func UpdateProfile(c *gin.Context) {
 	}
 
 	comorbidities := c.PostFormArray("comorbidities")
+	comorbiditiesJSON, err := json.Marshal(comorbidities)
+	if err != nil || len(comorbidities) == 0 {
+		comorbiditiesJSON = []byte("[]")
+	}
+	comorbiditiesStr := string(comorbiditiesJSON)
 
 	db := database.GetDB()
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
@@ -525,6 +530,15 @@ func UpdateProfile(c *gin.Context) {
 	if errCount == nil && count > 0 {
 		c.JSON(http.StatusConflict, gin.H{"error": "Este email já está a ser utilizado por outro utilizador."})
 		return
+	}
+
+	if cpf != nil {
+		var cpfCount int
+		errCpfCount := db.QueryRow(ctx, "SELECT COUNT(*) FROM users WHERE cpf = $1 AND id != $2", *cpf, userID).Scan(&cpfCount)
+		if errCpfCount == nil && cpfCount > 0 {
+			c.JSON(http.StatusConflict, gin.H{"error": "Este CPF já está a ser utilizado por outra conta."})
+			return
+		}
 	}
 
 	var avatarURL *string
@@ -557,10 +571,10 @@ func UpdateProfile(c *gin.Context) {
 	var errUpdate error
 	if avatarURL != nil {
 		query = `UPDATE users SET email = $1, height = $2, weight = $3, date_of_birth = $4, gender = $5, cpf = $6, clinical_condition = $7, comorbidities = $8, avatar_url = $9 WHERE id = $10`
-		_, errUpdate = db.Exec(ctx, query, email, height, weight, birthDate, gender, cpf, clinicalCondition, comorbidities, *avatarURL, userID)
+		_, errUpdate = db.Exec(ctx, query, email, height, weight, birthDate, gender, cpf, clinicalCondition, comorbiditiesStr, *avatarURL, userID)
 	} else {
 		query = `UPDATE users SET email = $1, height = $2, weight = $3, date_of_birth = $4, gender = $5, cpf = $6, clinical_condition = $7, comorbidities = $8 WHERE id = $9`
-		_, errUpdate = db.Exec(ctx, query, email, height, weight, birthDate, gender, cpf, clinicalCondition, comorbidities, userID)
+		_, errUpdate = db.Exec(ctx, query, email, height, weight, birthDate, gender, cpf, clinicalCondition, comorbiditiesStr, userID)
 	}
 
 	if errUpdate != nil {
@@ -570,10 +584,14 @@ func UpdateProfile(c *gin.Context) {
 	}
 
 	var user models.User
+	var comorbsBytes []byte
 	querySelect := `SELECT id, name, email, avatar_url, height, weight, date_of_birth, cpf, gender, clinical_condition, comorbidities, created_at FROM users WHERE id = $1`
 	err = db.QueryRow(ctx, querySelect, userID).Scan(
-		&user.ID, &user.Name, &user.Email, &user.AvatarURL, &user.Height, &user.Weight, &user.BirthDate, &user.CPF, &user.Gender, &user.ClinicalCondition, &user.Comorbidities, &user.CreatedAt,
+		&user.ID, &user.Name, &user.Email, &user.AvatarURL, &user.Height, &user.Weight, &user.BirthDate, &user.CPF, &user.Gender, &user.ClinicalCondition, &comorbsBytes, &user.CreatedAt,
 	)
+	if err == nil && len(comorbsBytes) > 0 {
+		_ = json.Unmarshal(comorbsBytes, &user.Comorbidities)
+	}
 	if err != nil {
 		log.Printf("UpdateProfile select error: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao carregar dados atualizados do utilizador."})
