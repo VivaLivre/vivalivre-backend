@@ -39,9 +39,9 @@ func Register(c *gin.Context) {
 
 	db := database.GetDB()
 	var user models.User
-	query := `INSERT INTO users (name, email, password_hash, cpf, date_of_birth, gender, weight, height, clinical_condition, comorbidities) 
+	query := `INSERT INTO users (name, email, password_hash, cpf, date_of_birth, gender, weight, height, condition, comorbidities) 
 	          VALUES ($1, $2, $3, $4, NULLIF($5, '')::DATE, $6, $7, $8, $9, $10) 
-	          RETURNING id, name, email, avatar_url, height, weight, date_of_birth::text, clinical_condition, comorbidities, created_at`
+	          RETURNING id, name, email, avatar_url, height, weight, date_of_birth::text, condition, comorbidities, created_at`
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
 	defer cancel()
 
@@ -49,7 +49,7 @@ func Register(c *gin.Context) {
 	err = db.QueryRow(ctx, query,
 		req.Name, req.Email, hash, req.CPF, req.DateOfBirth, req.Gender, req.Weight, req.Height, req.ClinicalCondition, string(comorbiditiesJSON),
 	).Scan(
-		&user.ID, &user.Name, &user.Email, &user.AvatarURL, &user.Height, &user.Weight, &user.DateOfBirth, &user.ClinicalCondition, &comorbsBytes, &user.CreatedAt,
+		&user.ID, &user.Name, &user.Email, &user.AvatarURL, &user.Height, &user.Weight, &user.DateOfBirth, &user.Condition, &comorbsBytes, &user.CreatedAt,
 	)
 
 	if err == nil {
