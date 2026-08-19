@@ -394,12 +394,14 @@ func GoogleLogin(c *gin.Context) {
 		name = email
 	}
 
+	picture, _ := payload.Claims["picture"].(string)
+
 	db := database.GetDB()
 	var user models.User
 	var status *string
 
 	// Buscar utilizador na base de dados por email
-	querySelect := `SELECT id, name, email, status, avatar_url, height, weight, birth_date, clinical_condition, created_at FROM users WHERE email = $1`
+	querySelect := `SELECT id, name, email, status, avatar_url, height, weight, date_of_birth, clinical_condition, created_at FROM users WHERE email = $1`
 	err = db.QueryRow(ctx, querySelect, email).Scan(
 		&user.ID, &user.Name, &user.Email, &status, &user.AvatarURL, &user.Height, &user.Weight, &user.BirthDate, &user.ClinicalCondition, &user.CreatedAt,
 	)
@@ -431,9 +433,14 @@ func GoogleLogin(c *gin.Context) {
 		return
 	}
 
+	var avatarURL *string
+	if picture != "" {
+		avatarURL = &picture
+	}
+
 	// Criar novo utilizador (password_hash fica NULL)
-	queryInsert := `INSERT INTO users (name, email, password_hash) VALUES ($1, $2, NULL) RETURNING id, name, email, avatar_url, height, weight, birth_date, clinical_condition, created_at`
-	err = db.QueryRow(ctx, queryInsert, name, email).Scan(
+	queryInsert := `INSERT INTO users (name, email, password_hash, avatar_url) VALUES ($1, $2, NULL, $3) RETURNING id, name, email, avatar_url, height, weight, date_of_birth, clinical_condition, created_at`
+	err = db.QueryRow(ctx, queryInsert, name, email, avatarURL).Scan(
 		&user.ID, &user.Name, &user.Email, &user.AvatarURL, &user.Height, &user.Weight, &user.BirthDate, &user.ClinicalCondition, &user.CreatedAt,
 	)
 	if err != nil {
