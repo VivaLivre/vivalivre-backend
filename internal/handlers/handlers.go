@@ -399,9 +399,9 @@ func GoogleLogin(c *gin.Context) {
 	var status *string
 
 	// Buscar utilizador na base de dados por email
-	querySelect := `SELECT id, name, email, status, avatar_url, height, weight, birth_date, condition, created_at FROM users WHERE email = $1`
+	querySelect := `SELECT id, name, email, status, avatar_url, height, weight, birth_date, clinical_condition, created_at FROM users WHERE email = $1`
 	err = db.QueryRow(ctx, querySelect, email).Scan(
-		&user.ID, &user.Name, &user.Email, &status, &user.AvatarURL, &user.Height, &user.Weight, &user.BirthDate, &user.Condition, &user.CreatedAt,
+		&user.ID, &user.Name, &user.Email, &status, &user.AvatarURL, &user.Height, &user.Weight, &user.BirthDate, &user.ClinicalCondition, &user.CreatedAt,
 	)
 
 	if err == nil {
@@ -432,9 +432,9 @@ func GoogleLogin(c *gin.Context) {
 	}
 
 	// Criar novo utilizador (password_hash fica NULL)
-	queryInsert := `INSERT INTO users (name, email, password_hash) VALUES ($1, $2, NULL) RETURNING id, name, email, avatar_url, height, weight, birth_date, condition, created_at`
+	queryInsert := `INSERT INTO users (name, email, password_hash) VALUES ($1, $2, NULL) RETURNING id, name, email, avatar_url, height, weight, birth_date, clinical_condition, created_at`
 	err = db.QueryRow(ctx, queryInsert, name, email).Scan(
-		&user.ID, &user.Name, &user.Email, &user.AvatarURL, &user.Height, &user.Weight, &user.BirthDate, &user.Condition, &user.CreatedAt,
+		&user.ID, &user.Name, &user.Email, &user.AvatarURL, &user.Height, &user.Weight, &user.BirthDate, &user.ClinicalCondition, &user.CreatedAt,
 	)
 	if err != nil {
 		log.Printf("GoogleLogin db insert error: %v", err)
@@ -543,9 +543,9 @@ func UpdateProfile(c *gin.Context) {
 	}
 
 	var user models.User
-	querySelect := `SELECT id, name, email, avatar_url, height, weight, date_of_birth, condition, created_at FROM users WHERE id = $1`
+	querySelect := `SELECT id, name, email, avatar_url, height, weight, date_of_birth, clinical_condition, created_at FROM users WHERE id = $1`
 	err = db.QueryRow(ctx, querySelect, userID).Scan(
-		&user.ID, &user.Name, &user.Email, &user.AvatarURL, &user.Height, &user.Weight, &user.BirthDate, &user.Condition, &user.CreatedAt,
+		&user.ID, &user.Name, &user.Email, &user.AvatarURL, &user.Height, &user.Weight, &user.BirthDate, &user.ClinicalCondition, &user.CreatedAt,
 	)
 	if err != nil {
 		log.Printf("UpdateProfile select error: %v", err)
