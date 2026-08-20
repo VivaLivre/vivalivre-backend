@@ -527,6 +527,20 @@ func UpdateProfile(c *gin.Context) {
 	}
 	comorbiditiesStr := string(comorbiditiesJSON)
 
+	var passwordHash *string
+	if password := c.PostForm("password"); password != "" {
+		if len(password) < 6 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "A palavra-passe deve ter pelo menos 6 caracteres."})
+			return
+		}
+		hashString, errHash := auth.HashPassword(password)
+		if errHash != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Falha ao processar palavra-passe."})
+			return
+		}
+		passwordHash = &hashString
+	}
+
 	db := database.GetDB()
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
 	defer cancel()
@@ -576,13 +590,23 @@ func UpdateProfile(c *gin.Context) {
 
 	var query string
 	var errUpdate error
-	if avatarURL != nil {
+	var args []interface{}
+
+	if avatarURL != nil && passwordHash != nil {
+		query = `UPDATE users SET email = $1, height = $2, weight = $3, date_of_birth = $4, gender = $5, cpf = $6, clinical_condition = $7, comorbidities = $8, avatar_url = $9, password_hash = $10 WHERE id = $11`
+		args = []interface{}{email, height, weight, birthDate, gender, cpf, clinicalCondition, comorbiditiesStr, *avatarURL, *passwordHash, userID}
+	} else if avatarURL != nil && passwordHash == nil {
 		query = `UPDATE users SET email = $1, height = $2, weight = $3, date_of_birth = $4, gender = $5, cpf = $6, clinical_condition = $7, comorbidities = $8, avatar_url = $9 WHERE id = $10`
-		_, errUpdate = db.Exec(ctx, query, email, height, weight, birthDate, gender, cpf, clinicalCondition, comorbiditiesStr, *avatarURL, userID)
+		args = []interface{}{email, height, weight, birthDate, gender, cpf, clinicalCondition, comorbiditiesStr, *avatarURL, userID}
+	} else if avatarURL == nil && passwordHash != nil {
+		query = `UPDATE users SET email = $1, height = $2, weight = $3, date_of_birth = $4, gender = $5, cpf = $6, clinical_condition = $7, comorbidities = $8, password_hash = $9 WHERE id = $10`
+		args = []interface{}{email, height, weight, birthDate, gender, cpf, clinicalCondition, comorbiditiesStr, *passwordHash, userID}
 	} else {
 		query = `UPDATE users SET email = $1, height = $2, weight = $3, date_of_birth = $4, gender = $5, cpf = $6, clinical_condition = $7, comorbidities = $8 WHERE id = $9`
-		_, errUpdate = db.Exec(ctx, query, email, height, weight, birthDate, gender, cpf, clinicalCondition, comorbiditiesStr, userID)
+		args = []interface{}{email, height, weight, birthDate, gender, cpf, clinicalCondition, comorbiditiesStr, userID}
 	}
+
+	_, errUpdate = db.Exec(ctx, query, args...)
 
 	if errUpdate != nil {
 		log.Printf("UpdateProfile database error: %v", errUpdate)
@@ -608,3 +632,118 @@ func UpdateProfile(c *gin.Context) {
 	c.JSON(http.StatusOK, user)
 }
 
+// UpdatePassword handles changing or setting a new password for an authenticated user.
+func UpdatePassword(c *gin.Context) {
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Utilizador não autenticado."})
+		return
+	}
+
+	var req struct {
+		NewPassword string `json:"new_password" binding:"required,min=6"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	db := database.GetDB()
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+	defer cancel()
+
+	newHash, err := auth.HashPassword(req.NewPassword)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao encriptar a nova palavra-passe."})
+		return
+	}
+
+	_, err = db.Exec(ctx, "UPDATE users SET password_hash = $1 WHERE id = $2", newHash, userID)
+	if err != nil {
+		log.Printf("UpdatePassword db update error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao atualizar a palavra-passe."})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Palavra-passe atualizada com sucesso."})
+}
+
+var passwordResetTokens = make(map[string]string) // In-memory store para testes (key: token, value: email)
+
+// ForgotPassword generates a reset token and prints it to the console
+func ForgotPassword(c *gin.Context) {
+	var req struct {
+		Email string `json:"email" binding:"required,email"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Email inválido."})
+		return
+	}
+
+	db := database.GetDB()
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+	defer cancel()
+
+	var id int
+	err := db.QueryRow(ctx, "SELECT id FROM users WHERE email = $1", req.Email).Scan(&id)
+	if err != nil {
+		// Retornar sucesso de qualquer forma para não expor quais emails existem na DB
+		c.JSON(http.StatusOK, gin.H{"message": "Se o email existir, receberá um link de recuperação."})
+		return
+	}
+
+	// Gerar um token simples (6 digitos)
+	token := strconv.FormatInt(time.Now().UnixNano(), 10)[len(strconv.FormatInt(time.Now().UnixNano(), 10))-6:]
+	
+	passwordResetTokens[token] = req.Email
+
+	// Imprimir na consola para testes
+	log.Printf("=========================================================")
+	log.Printf("PEDIDO DE RECUPERAÇÃO DE PALAVRA-PASSE")
+	log.Printf("Email: %s", req.Email)
+	log.Printf("Código de recuperação: %s", token)
+	log.Printf("=========================================================")
+
+	c.JSON(http.StatusOK, gin.H{"message": "Se o email existir, receberá um link de recuperação."})
+}
+
+// ResetPassword validates the token and sets a new password
+func ResetPassword(c *gin.Context) {
+	var req struct {
+		Token       string `json:"token" binding:"required"`
+		NewPassword string `json:"new_password" binding:"required,min=6"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	email, exists := passwordResetTokens[req.Token]
+	if !exists {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Código de recuperação inválido ou expirado."})
+		return
+	}
+
+	newHash, err := auth.HashPassword(req.NewPassword)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao encriptar a nova palavra-passe."})
+		return
+	}
+
+	db := database.GetDB()
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+	defer cancel()
+
+	_, err = db.Exec(ctx, "UPDATE users SET password_hash = $1 WHERE email = $2", newHash, email)
+	if err != nil {
+		log.Printf("ResetPassword db update error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao atualizar a palavra-passe."})
+		return
+	}
+
+	// Invalidar token
+	delete(passwordResetTokens, req.Token)
+
+	c.JSON(http.StatusOK, gin.H{"message": "Palavra-passe alterada com sucesso."})
+}
