@@ -76,6 +76,8 @@ func main() {
 	}
 
 	r.POST("/api/auth/google", handlers.GoogleLogin)
+	r.POST("/api/auth/forgot-password", handlers.ForgotPassword)
+	r.POST("/api/auth/reset-password", handlers.ResetPassword)
 
 	// Admin Routes (Protegido por JWT + Validação de Role 'admin')
 	admin := r.Group("/api/admin")
@@ -108,6 +110,7 @@ func main() {
 	{
 		api.GET("/users/me", handlers.GetMe)
 		api.PUT("/users/profile", handlers.UpdateProfile)
+		api.PUT("/users/me/password", handlers.UpdatePassword)
 		api.GET("/bathrooms/nearby", handlers.GetNearbyBathrooms)
 		api.POST("/bathrooms/request", handlers.RequestBathroom)
 		api.GET("/health/entries", handlers.GetHealthEntries)
