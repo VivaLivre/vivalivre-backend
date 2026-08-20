@@ -55,5 +55,5 @@ type BathroomRatingStats struct {
 
 // HelpfulVoteRequest é o payload para votar em utilidade
 type HelpfulVoteRequest struct {
-	IsHelpful bool `json:"is_helpful" binding:"required"`
+	IsHelpful *bool `json:"is_helpful" binding:"required"`
 }

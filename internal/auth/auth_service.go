@@ -34,10 +34,11 @@ func CheckPassword(password, hash string) bool {
 	return err == nil
 }
 
-// GenerateToken creates a new JWT token for a user ID
-func GenerateToken(userID int) (string, error) {
+// GenerateToken creates a new JWT token for a user ID and Role
+func GenerateToken(userID int, role string) (string, error) {
 	claims := jwt.MapClaims{
 		"user_id": userID,
+		"role":    role,
 		"exp":     time.Now().Add(time.Hour * 24).Unix(), // 24 hours
 		"iat":     time.Now().Unix(),
 	}
@@ -46,8 +47,8 @@ func GenerateToken(userID int) (string, error) {
 	return token.SignedString(jwtSecret)
 }
 
-// ValidateToken checks if a token is valid and returns the user ID
-func ValidateToken(tokenString string) (int, error) {
+// ValidateToken checks if a token is valid and returns the user ID and Role
+func ValidateToken(tokenString string) (int, string, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, errors.New("unexpected signing method")
@@ -56,15 +57,16 @@ func ValidateToken(tokenString string) (int, error) {
 	})
 
 	if err != nil {
-		return 0, err
+		return 0, "", err
 	}
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 		userID := int(claims["user_id"].(float64))
-		return userID, nil
+		role, _ := claims["role"].(string)
+		return userID, role, nil
 	}
 
-	return 0, errors.New("invalid token")
+	return 0, "", errors.New("invalid token")
 }
 
 // VerifyGoogleToken validates the Google ID token and returns the payload.
