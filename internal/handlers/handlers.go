@@ -41,7 +41,7 @@ func Register(c *gin.Context) {
 	var user models.User
 	query := `INSERT INTO users (name, email, password_hash, cpf, date_of_birth, gender, weight, height, clinical_condition, comorbidities) 
 	          VALUES ($1, $2, $3, $4, NULLIF($5, '')::DATE, $6, $7, $8, $9, $10) 
-	          RETURNING id, name, email, avatar_url, height, weight, date_of_birth::text, clinical_condition, comorbidities, created_at`
+	          RETURNING id, name, email, avatar_url, height, weight, date_of_birth::text, clinical_condition, comorbidities, role, created_at`
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
 	defer cancel()
 
@@ -49,7 +49,7 @@ func Register(c *gin.Context) {
 	err = db.QueryRow(ctx, query,
 		req.Name, req.Email, hash, req.CPF, req.DateOfBirth, req.Gender, req.Weight, req.Height, req.ClinicalCondition, string(comorbiditiesJSON),
 	).Scan(
-		&user.ID, &user.Name, &user.Email, &user.AvatarURL, &user.Height, &user.Weight, &user.DateOfBirth, &user.ClinicalCondition, &comorbsBytes, &user.CreatedAt,
+		&user.ID, &user.Name, &user.Email, &user.AvatarURL, &user.Height, &user.Weight, &user.DateOfBirth, &user.ClinicalCondition, &comorbsBytes, &user.Role, &user.CreatedAt,
 	)
 
 	if err == nil {
@@ -73,7 +73,7 @@ func Register(c *gin.Context) {
 		return
 	}
 
-	token, err := auth.GenerateToken(user.ID)
+	token, err := auth.GenerateToken(user.ID, user.Role)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
 		return
@@ -97,12 +97,12 @@ func Login(c *gin.Context) {
 	var user models.User
 	var hash string
 	var status *string
-	query := `SELECT id, name, email, password_hash, status, avatar_url, height, weight, date_of_birth, clinical_condition, created_at FROM users WHERE email = $1`
+	query := `SELECT id, name, email, password_hash, status, avatar_url, height, weight, date_of_birth, clinical_condition, role, created_at FROM users WHERE email = $1`
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
 	defer cancel()
 
 	err := db.QueryRow(ctx, query, req.Email).Scan(
-		&user.ID, &user.Name, &user.Email, &hash, &status, &user.AvatarURL, &user.Height, &user.Weight, &user.BirthDate, &user.ClinicalCondition, &user.CreatedAt,
+		&user.ID, &user.Name, &user.Email, &hash, &status, &user.AvatarURL, &user.Height, &user.Weight, &user.BirthDate, &user.ClinicalCondition, &user.Role, &user.CreatedAt,
 	)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
@@ -119,7 +119,7 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	token, err := auth.GenerateToken(user.ID)
+	token, err := auth.GenerateToken(user.ID, user.Role)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
 		return
@@ -401,9 +401,9 @@ func GoogleLogin(c *gin.Context) {
 	var status *string
 
 	// Buscar utilizador na base de dados por email
-	querySelect := `SELECT id, name, email, status, avatar_url, height, weight, date_of_birth, clinical_condition, created_at FROM users WHERE email = $1`
+	querySelect := `SELECT id, name, email, status, avatar_url, height, weight, date_of_birth, clinical_condition, role, created_at FROM users WHERE email = $1`
 	err = db.QueryRow(ctx, querySelect, email).Scan(
-		&user.ID, &user.Name, &user.Email, &status, &user.AvatarURL, &user.Height, &user.Weight, &user.BirthDate, &user.ClinicalCondition, &user.CreatedAt,
+		&user.ID, &user.Name, &user.Email, &status, &user.AvatarURL, &user.Height, &user.Weight, &user.BirthDate, &user.ClinicalCondition, &user.Role, &user.CreatedAt,
 	)
 
 	if err == nil {
@@ -413,7 +413,7 @@ func GoogleLogin(c *gin.Context) {
 			return
 		}
 
-		token, err := auth.GenerateToken(user.ID)
+		token, err := auth.GenerateToken(user.ID, user.Role)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
 			return
@@ -439,9 +439,9 @@ func GoogleLogin(c *gin.Context) {
 	}
 
 	// Criar novo utilizador (password_hash fica NULL)
-	queryInsert := `INSERT INTO users (name, email, password_hash, avatar_url) VALUES ($1, $2, NULL, $3) RETURNING id, name, email, avatar_url, height, weight, date_of_birth, clinical_condition, created_at`
+	queryInsert := `INSERT INTO users (name, email, password_hash, avatar_url) VALUES ($1, $2, NULL, $3) RETURNING id, name, email, avatar_url, height, weight, date_of_birth, clinical_condition, role, created_at`
 	err = db.QueryRow(ctx, queryInsert, name, email, avatarURL).Scan(
-		&user.ID, &user.Name, &user.Email, &user.AvatarURL, &user.Height, &user.Weight, &user.BirthDate, &user.ClinicalCondition, &user.CreatedAt,
+		&user.ID, &user.Name, &user.Email, &user.AvatarURL, &user.Height, &user.Weight, &user.BirthDate, &user.ClinicalCondition, &user.Role, &user.CreatedAt,
 	)
 	if err != nil {
 		log.Printf("GoogleLogin db insert error: %v", err)
@@ -449,7 +449,7 @@ func GoogleLogin(c *gin.Context) {
 		return
 	}
 
-	token, err := auth.GenerateToken(user.ID)
+	token, err := auth.GenerateToken(user.ID, user.Role)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
 		return

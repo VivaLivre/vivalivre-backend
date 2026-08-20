@@ -246,7 +246,14 @@ func (h *AdminBathroomHandler) UpdateAdminBathroom(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Bathroom updated successfully"})
+	if finalPhotoUrl != nil {
+		currentB.PhotoURL = *finalPhotoUrl
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Bathroom updated successfully",
+		"data":    currentB,
+	})
 }
 
 func (h *AdminBathroomHandler) DeleteAdminBathroom(c *gin.Context) {

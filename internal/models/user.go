@@ -17,6 +17,7 @@ type User struct {
 	Gender            *string    `json:"gender,omitempty"`
 	ClinicalCondition *string    `json:"clinical_condition,omitempty"`
 	Comorbidities     []string   `json:"comorbidities,omitempty"`
+	Role              string     `json:"role,omitempty"`
 	CreatedAt         time.Time  `json:"created_at"`
 }
 
