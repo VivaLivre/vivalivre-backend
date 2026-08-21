@@ -20,8 +20,8 @@ type BathroomReport struct {
 
 // CreateReportRequest é o payload para criar um report
 type CreateReportRequest struct {
-	Reason      string  `json:"reason" binding:"required"`
-	Description *string `json:"description,omitempty"`
+	Reason      string  `json:"reason" binding:"required,max=150"`
+	Description *string `json:"description,omitempty" binding:"omitempty,max=1000"`
 }
 
 // UpdateReportStatusRequest é o payload para atualizar o status do report

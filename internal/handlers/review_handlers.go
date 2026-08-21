@@ -394,7 +394,7 @@ func VoteHelpful(c *gin.Context) {
 		DO UPDATE SET is_helpful = EXCLUDED.is_helpful
 	`
 
-	_, err = db.Exec(ctx, voteQuery, reviewID, userID, req.IsHelpful)
+	_, err = db.Exec(ctx, voteQuery, reviewID, userID, *req.IsHelpful)
 	if err != nil {
 		log.Printf("VoteHelpful error: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to record vote"})
