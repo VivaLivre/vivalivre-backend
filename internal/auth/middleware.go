@@ -1,11 +1,9 @@
 package auth
 
 import (
-	"context"
 	"net/http"
 	"strings"
 
-	"github.com/gabrieljose2004/vivalivre-backend/internal/database"
 	"github.com/gin-gonic/gin"
 )
 
