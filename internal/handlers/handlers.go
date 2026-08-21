@@ -6,6 +6,7 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"regexp"
 	"strconv"
 	"time"
 
@@ -23,6 +24,13 @@ func Register(c *gin.Context) {
 	var req models.RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Validate name allows unicode letters, spaces, hyphens and apostrophes
+	nameRegex := regexp.MustCompile(`^[\p{L}\s\-']+$`)
+	if !nameRegex.MatchString(req.Name) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "O nome contém caracteres inválidos."})
 		return
 	}
 
