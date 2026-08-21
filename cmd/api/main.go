@@ -23,9 +23,6 @@ func main() {
 
 	// Initialize Database
 	db := database.GetDB()
-	if err := database.EnsureRatingsSchema(); err != nil {
-		log.Fatalf("Failed to ensure ratings schema: %v", err)
-	}
 	defer database.CloseDB()
 
 	// Setup Dependencies
@@ -50,9 +47,30 @@ func main() {
 	r.Use(gin.Recovery()) // Recover from panics
 	r.Use(gin.Logger())   // Request logging
 
-	// CORS Middleware (Basic)
 	r.Use(func(c *gin.Context) {
-		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+		origin := c.Request.Header.Get("Origin")
+		allowedOrigins := []string{
+			"http://localhost:3000",
+			"http://localhost:8080",
+			"https://admin.vivalivre.com",
+			"https://vivalivre.com",
+		}
+		
+		allowed := false
+		for _, o := range allowedOrigins {
+			if origin == o {
+				allowed = true
+				break
+			}
+		}
+
+		if allowed {
+			c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
+		} else {
+			// Fallback to strict origin (or could just omit the header)
+			c.Writer.Header().Set("Access-Control-Allow-Origin", "https://vivalivre.com")
+		}
+
 		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE, PATCH")

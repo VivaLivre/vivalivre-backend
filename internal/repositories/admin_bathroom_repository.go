@@ -169,12 +169,12 @@ func (r *adminBathroomRepository) GetAdminBathroomByID(ctx context.Context, id s
 func (r *adminBathroomRepository) CreateAdminBathroom(ctx context.Context, b models.Bathroom, photoUrl *string) (models.Bathroom, error) {
 	query := `
 		INSERT INTO bathrooms (name, address, location, is_accessible, has_changing_table, is_free, operating_hours, observations, photo_url, status)
-		VALUES ($1, $2, ST_SetSRID(ST_MakePoint($4, $3), 4326), $5, $6, $7, $8::jsonb, $9, $10, 'approved')
+		VALUES ($1, $2, ST_SetSRID(ST_MakePoint($3, $4), 4326), $5, $6, $7, $8::jsonb, $9, $10, 'approved')
 		RETURNING id, created_at, status
 	`
 	
 	err := r.db.QueryRow(ctx, query,
-		b.Name, b.Address, b.Latitude, b.Longitude,
+		b.Name, b.Address, b.Longitude, b.Latitude,
 		b.IsAccessible, b.HasChangingTable, b.IsFree,
 		b.OperatingHours, b.Observations, photoUrl,
 	).Scan(&b.ID, &b.CreatedAt, &b.Status)
@@ -185,12 +185,12 @@ func (r *adminBathroomRepository) CreateAdminBathroom(ctx context.Context, b mod
 func (r *adminBathroomRepository) UpdateAdminBathroom(ctx context.Context, id string, b models.Bathroom, photoUrl *string) error {
 	query := `
 		UPDATE bathrooms
-		SET name = $1, address = $2, location = ST_SetSRID(ST_MakePoint($4, $3), 4326), 
+		SET name = $1, address = $2, location = ST_SetSRID(ST_MakePoint($3, $4), 4326), 
 		    is_accessible = $5, has_changing_table = $6, is_free = $7, 
 		    operating_hours = $8::jsonb, observations = $9, status = $10
 	`
 	args := []interface{}{
-		b.Name, b.Address, b.Latitude, b.Longitude,
+		b.Name, b.Address, b.Longitude, b.Latitude,
 		b.IsAccessible, b.HasChangingTable, b.IsFree,
 		b.OperatingHours, b.Observations, b.Status,
 	}
