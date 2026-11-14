@@ -1,3 +1,7 @@
+//go:build ignore
+
+// Standalone script: run with `go run scripts/insert_test_bathrooms.go`
+
 package main
 
 import (

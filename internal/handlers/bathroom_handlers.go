@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"io"
 	"log"
 	"net/http"
 	"strconv"
@@ -17,7 +18,7 @@ import (
 // uploads the photo to Supabase Storage, and inserts the bathroom with status 'pending'.
 func RequestBathroom(c *gin.Context) {
 	// --- 1. Extrair userID e validar spam (Rate Limiting) ---
-	
+
 	userID, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Utilizador não autenticado."})
@@ -51,7 +52,7 @@ func RequestBathroom(c *gin.Context) {
 	isAccessibleStr := c.PostForm("is_accessible")
 	hasChangingTableStr := c.PostForm("has_changing_table")
 	isFreeStr := c.PostForm("is_free")
-	comment := c.PostForm("comment") // optional
+	comment := c.PostForm("comment")                   // optional
 	operatingHoursStr := c.PostForm("operating_hours") // optional
 
 	// Required text fields
@@ -85,8 +86,14 @@ func RequestBathroom(c *gin.Context) {
 	}
 	defer file.Close()
 
-	// Validate MIME type
-	contentType := header.Header.Get("Content-Type")
+	// Validate MIME type pelo conteúdo real (magic bytes), não pelo header do cliente
+	sniff := make([]byte, 512)
+	n, _ := file.Read(sniff)
+	if _, err := file.Seek(0, io.SeekStart); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Não foi possível ler a foto."})
+		return
+	}
+	contentType := http.DetectContentType(sniff[:n])
 	if !isAllowedImageType(contentType) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Formato de imagem não suportado. Use JPEG, PNG ou WebP."})
 		return
@@ -123,17 +130,17 @@ func RequestBathroom(c *gin.Context) {
 	var bathroomID int
 	var createdAt time.Time
 	err = db.QueryRow(ctx, query,
-		name,             // $1
-		address,          // $2
-		lng,              // $3 — ST_MakePoint(longitude, latitude)
-		lat,              // $4
-		isAccessible,     // $5
-		hasChangingTable, // $6
-		isFree,           // $7
+		name,                // $1
+		address,             // $2
+		lng,                 // $3 — ST_MakePoint(longitude, latitude)
+		lat,                 // $4
+		isAccessible,        // $5
+		hasChangingTable,    // $6
+		isFree,              // $7
 		nilIfEmpty(comment), // $8
-		photoURL,         // $9
-		operatingHoursStr, // $10
-		userID,           // $11
+		photoURL,            // $9
+		operatingHoursStr,   // $10
+		userID,              // $11
 	).Scan(&bathroomID, &createdAt)
 
 	if err != nil {
@@ -145,10 +152,10 @@ func RequestBathroom(c *gin.Context) {
 	// --- 5. Return success response ---
 
 	c.JSON(http.StatusCreated, gin.H{
-		"message":   "Sugestão enviada com sucesso! Será analisada pela equipa.",
-		"id":        bathroomID,
-		"status":    "pending",
-		"photo_url": photoURL,
+		"message":    "Sugestão enviada com sucesso! Será analisada pela equipa.",
+		"id":         bathroomID,
+		"status":     "pending",
+		"photo_url":  photoURL,
 		"created_at": createdAt,
 	})
 }

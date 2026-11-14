@@ -1,3 +1,7 @@
+//go:build ignore
+
+// Standalone script: run with `go run scratch/seed_json.go`
+
 package main
 
 import (

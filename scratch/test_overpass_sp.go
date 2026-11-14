@@ -1,3 +1,7 @@
+//go:build ignore
+
+// Standalone script: run with `go run scratch/test_overpass_sp.go`
+
 package main
 
 import (

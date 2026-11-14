@@ -5,15 +5,15 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/VivaLivre/vivalivre-backend/internal/database"
+	"github.com/gabrieljose2004/vivalivre-backend/internal/database"
 )
 
 func main() {
 	log.Println("Starting database migrations...")
-	
+
 	pool := database.GetDB()
 	defer database.CloseDB()
-	
+
 	ctx := context.Background()
 
 	statements := []string{

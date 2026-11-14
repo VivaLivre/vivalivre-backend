@@ -1,3 +1,7 @@
+//go:build ignore
+
+// Standalone script: run with `go run scratch/delete_all.go`
+
 package main
 
 import (

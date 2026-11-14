@@ -49,7 +49,7 @@ type BathroomRatingStats struct {
 	AverageRating      float64     `json:"average_rating"`
 	AvgCleanliness     float64     `json:"avg_cleanliness"`
 	AvgAccessibility   float64     `json:"avg_accessibility"`
-	AvgSpaciousness  float64     `json:"avg_spaciousness"`
+	AvgSpaciousness    float64     `json:"avg_spaciousness"`
 	RatingDistribution map[int]int `json:"rating_distribution"`
 }
 

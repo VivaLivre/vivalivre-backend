@@ -59,7 +59,7 @@ func (h *AdminHandler) UpdateBathroomStatus(c *gin.Context) {
 		return
 	}
 
-	// Aqui deveríamos lidar com "Delete orphaned photo if rejected" 
+	// Aqui deveríamos lidar com "Delete orphaned photo if rejected"
 	// mas para não complicar por agora (que já está a ser processado),
 	// devolvemos o StatusOK. A remoção de foto passará para a camada de serviço futuramente.
 

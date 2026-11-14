@@ -4,11 +4,14 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
+	"time"
 
 	"github.com/gabrieljose2004/vivalivre-backend/internal/auth"
 	"github.com/gabrieljose2004/vivalivre-backend/internal/database"
 	"github.com/gabrieljose2004/vivalivre-backend/internal/handlers"
 	adminHandlers "github.com/gabrieljose2004/vivalivre-backend/internal/handlers/admin"
+	"github.com/gabrieljose2004/vivalivre-backend/internal/middleware"
 	"github.com/gabrieljose2004/vivalivre-backend/internal/repositories"
 	"github.com/gabrieljose2004/vivalivre-backend/internal/services"
 	"github.com/gin-gonic/gin"
@@ -20,6 +23,9 @@ func main() {
 	if err := godotenv.Load(); err != nil {
 		log.Println("No .env file found, using system environment variables")
 	}
+
+	// Secrets (must run after godotenv.Load so a local .env is honoured)
+	auth.InitJWT()
 
 	// Initialize Database
 	db := database.GetDB()
@@ -47,15 +53,24 @@ func main() {
 	r.Use(gin.Recovery()) // Recover from panics
 	r.Use(gin.Logger())   // Request logging
 
+	// CORS: origens permitidas configuráveis via ALLOWED_ORIGINS (separadas por vírgula)
+	allowedOrigins := []string{
+		"http://localhost:3000",
+		"http://localhost:8080",
+		"https://admin.vivalivre.com",
+		"https://vivalivre.com",
+	}
+	if extra := os.Getenv("ALLOWED_ORIGINS"); extra != "" {
+		for _, o := range strings.Split(extra, ",") {
+			if o = strings.TrimSpace(o); o != "" {
+				allowedOrigins = append(allowedOrigins, o)
+			}
+		}
+	}
+
 	r.Use(func(c *gin.Context) {
 		origin := c.Request.Header.Get("Origin")
-		allowedOrigins := []string{
-			"http://localhost:3000",
-			"http://localhost:8080",
-			"https://admin.vivalivre.com",
-			"https://vivalivre.com",
-		}
-		
+
 		allowed := false
 		for _, o := range allowedOrigins {
 			if origin == o {
@@ -87,15 +102,21 @@ func main() {
 		c.JSON(http.StatusOK, gin.H{"status": "alive"})
 	})
 
-	authGroup := r.Group("/auth")
+	// Rate limiting nas rotas de autenticação (brute-force / criação em massa)
+	authLimiter := middleware.NewRateLimiter(20, time.Minute)
+
+	authGroup := r.Group("/auth", authLimiter.Middleware())
 	{
 		authGroup.POST("/register", handlers.Register)
 		authGroup.POST("/login", handlers.Login)
 	}
 
-	r.POST("/api/auth/google", handlers.GoogleLogin)
-	r.POST("/api/auth/forgot-password", handlers.ForgotPassword)
-	r.POST("/api/auth/reset-password", handlers.ResetPassword)
+	apiAuth := r.Group("/api/auth", authLimiter.Middleware())
+	{
+		apiAuth.POST("/google", handlers.GoogleLogin)
+		apiAuth.POST("/forgot-password", handlers.ForgotPassword)
+		apiAuth.POST("/reset-password", handlers.ResetPassword)
+	}
 
 	// Admin Routes (Protegido por JWT + Validação de Role 'admin')
 	admin := r.Group("/api/admin")

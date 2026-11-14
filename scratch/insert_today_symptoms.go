@@ -1,3 +1,7 @@
+//go:build ignore
+
+// Standalone script: run with `go run scratch/insert_today_symptoms.go`
+
 package main
 
 import (

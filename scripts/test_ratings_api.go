@@ -1,3 +1,7 @@
+//go:build ignore
+
+// Standalone script: run with `go run scripts/test_ratings_api.go`
+
 package main
 
 import (

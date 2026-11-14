@@ -172,7 +172,7 @@ func (r *adminBathroomRepository) CreateAdminBathroom(ctx context.Context, b mod
 		VALUES ($1, $2, ST_SetSRID(ST_MakePoint($3, $4), 4326), $5, $6, $7, $8::jsonb, $9, $10, 'approved')
 		RETURNING id, created_at, status
 	`
-	
+
 	err := r.db.QueryRow(ctx, query,
 		b.Name, b.Address, b.Longitude, b.Latitude,
 		b.IsAccessible, b.HasChangingTable, b.IsFree,
@@ -194,7 +194,7 @@ func (r *adminBathroomRepository) UpdateAdminBathroom(ctx context.Context, id st
 		b.IsAccessible, b.HasChangingTable, b.IsFree,
 		b.OperatingHours, b.Observations, b.Status,
 	}
-	
+
 	if photoUrl != nil {
 		query += `, photo_url = $11 WHERE id = $12`
 		args = append(args, photoUrl, id)

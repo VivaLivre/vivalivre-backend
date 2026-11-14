@@ -1,3 +1,7 @@
+//go:build ignore
+
+// Standalone script: run with `go run cmd/populate/shoppings.go`
+
 package main
 
 import (
@@ -21,7 +25,9 @@ type RawLocation struct {
 }
 
 func main() {
-	os.Setenv("DB_URL", "postgresql://postgres.leteadhfnmefdmpivcll:***REMOVED***@aws-1-sa-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true&default_query_exec_mode=exec")
+	if os.Getenv("DB_URL") == "" {
+		log.Fatal("DB_URL environment variable is required (never hardcode credentials)")
+	}
 	db := database.GetDB()
 	ctx := context.Background()
 

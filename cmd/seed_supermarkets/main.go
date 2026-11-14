@@ -16,10 +16,10 @@ import (
 
 type OverpassResponse struct {
 	Elements []struct {
-		Type string `json:"type"`
-		ID   int64  `json:"id"`
-		Lat  float64 `json:"lat"`
-		Lon  float64 `json:"lon"`
+		Type   string  `json:"type"`
+		ID     int64   `json:"id"`
+		Lat    float64 `json:"lat"`
+		Lon    float64 `json:"lon"`
 		Center struct {
 			Lat float64 `json:"lat"`
 			Lon float64 `json:"lon"`
@@ -152,21 +152,21 @@ func main() {
 
 		if name != "Supermercado (Sem Nome)" && address != "Não informado" {
 			if lat < -23.0 && lat > -24.5 && lon < -46.0 && lon > -47.0 {
-				
+
 				var opHoursMap map[string]interface{}
 				if openingHours == "Não informado" {
 					opHoursMap = map[string]interface{}{"type": "unknown"}
 				} else if openingHours == "24/7" {
 					opHoursMap = map[string]interface{}{"type": "24h"}
 				} else {
-					// We'll store it as unknown with the raw string in observations if we wanted, 
+					// We'll store it as unknown with the raw string in observations if we wanted,
 					// but for now, we'll store type: unknown since we can't easily parse OSM string into our custom format.
 					// Actually, wait, let's just use unknown for everything we can't parse easily.
 					opHoursMap = map[string]interface{}{"type": "unknown", "raw_osm": openingHours}
 				}
-				
+
 				hoursJSON, _ := json.Marshal(opHoursMap)
-				
+
 				// PostGIS MakePoint expects (longitude, latitude)
 				_, err := db.Exec(context.Background(), insertQuery, name, address, lon, lat, string(hoursJSON))
 				if err != nil {

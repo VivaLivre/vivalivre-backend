@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/gin-gonic/gin"
 	"github.com/gabrieljose2004/vivalivre-backend/internal/database"
 	"github.com/gabrieljose2004/vivalivre-backend/internal/models"
+	"github.com/gin-gonic/gin"
 )
 
 // CreateBathroomReport handles user reports for a bathroom
@@ -48,7 +48,7 @@ func CreateBathroomReport(c *gin.Context) {
 
 	err = db.QueryRow(c.Request.Context(), query, bathroomID, userID, req.Reason, req.Description).
 		Scan(&report.ID, &report.Status, &report.CreatedAt)
-	
+
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create report"})
 		return
@@ -95,7 +95,7 @@ func CreateBathroomSuggestion(c *gin.Context) {
 
 	err = db.QueryRow(c.Request.Context(), query, bathroomID, userID, req.SuggestedUpdates).
 		Scan(&suggestion.ID, &suggestion.Status, &suggestion.CreatedAt)
-	
+
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create suggestion"})
 		return

@@ -14,10 +14,15 @@ import (
 
 var jwtSecret []byte
 
-func init() {
+// InitJWT carrega o segredo JWT do ambiente. Deve ser chamado em main()
+// DEPOIS de godotenv.Load(), caso contrário o .env local nunca é lido.
+func InitJWT() {
 	secret := os.Getenv("JWT_SECRET")
 	if secret == "" {
 		log.Fatal("JWT_SECRET environment variable is required and cannot be empty")
+	}
+	if len(secret) < 32 {
+		log.Println("WARNING: JWT_SECRET has fewer than 32 characters; use a longer random secret in production")
 	}
 	jwtSecret = []byte(secret)
 }
